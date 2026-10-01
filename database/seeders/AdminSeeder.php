@@ -18,7 +18,5 @@ class AdminSeeder extends Seeder
                 'role' => User::ROLE_RESPONSABLE,
             ]
         );
-
-        $this->call(AdminSeeder::class);
     }
 }
