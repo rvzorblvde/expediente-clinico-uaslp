@@ -11,10 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['responsable_sanitario', 'trabajador', 'alumno'])
-                ->default('alumno')
-                ->after('email');
+        Schema::create('paciente_correos', function (Blueprint $table) {
+            $table->id('idCorreo');
+
+            $table->unsignedBigInteger('idPaciente');
+            $table->foreign('idPaciente')->references('idPaciente')->on('pacientes')->onDelete('cascade');
+
+            $table->string('correo', 255);
         });
     }
 
@@ -23,8 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
-        });
+        Schema::dropIfExists('paciente_correos');
     }
 };

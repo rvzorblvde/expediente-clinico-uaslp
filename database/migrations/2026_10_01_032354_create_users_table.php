@@ -1,0 +1,44 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id('idUsuario');                    // Cambiamos el id estándar por idUsuario
+
+            // Llave foránea hacia la tabla roles
+            $table->unsignedBigInteger('idRol');
+            $table->foreign('idRol')->references('idRol')->on('roles')->onDelete('restrict');
+
+            $table->string('nombres', 100);
+            $table->string('apellido1', 100);
+            $table->string('apellido2', 100)->nullable();
+
+            $table->string('correo', 255)->unique();                // Correo único
+            $table->string('contrasena', 255);
+
+            $table->string('estado', 20)->default('activo');
+
+            // Los campos extra que Laravel usa para recuperación y sesión (recomendado dejarlos)
+            $table->timestamp('email_verified_at')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+    }
+};
