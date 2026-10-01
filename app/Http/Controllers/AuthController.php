@@ -11,25 +11,30 @@ class AuthController extends Controller
     public function showLoginForm()
     {
         return view('auth.login');
-        // return view('auth.login');
     }
 
-    // Validate credentials and login
+    // Validar credenciales para el inicio de sesión
     public function login (Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
+            'correo' => ['required', 'email'],
+            'contrasena' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $attemptData = [
+            'correo' => $credentials['correo'],
+            'password' => $credentials['contrasena']
+        ];
+
+        // Redirigir al dashboard
+        if (Auth::attempt($attemptData, $request->boolean('remember'))) {
             $request->session()->regenerate();
             return redirect()->intended(route('dashboard'));
         }
 
         return back()->withErrors([
-            'email' => 'Datos de inicio de sesión incorrectos',
-        ])->onlyInput('email');
+            'correo' => 'Datos de inicio de sesión incorrectos',
+        ])->onlyInput('correo');
 
     }
 
@@ -40,11 +45,12 @@ class AuthController extends Controller
     }
 
     // Close the session
-    public function logout ()
+    public function logout (Request $request)
     {
         Auth::logout();
-        return session()->invalidate();
+
+        $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('login,form');
+        return redirect()->route('login.form');
     }
 }

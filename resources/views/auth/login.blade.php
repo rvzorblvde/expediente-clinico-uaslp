@@ -23,17 +23,28 @@
                 </div>
             @endif
 
+            <!-- Mostrar errores de validación -->
+            @if ($errors->any())
+                <div class="mb-6 p-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
+                    <ul class="list-disc pl-5">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}" class="space-y-6">
                 @csrf
                 <div>
                     <label for="email" class="block text-sm font-medium text-slate-700">Correo Electrónico</label>
-                    <input type="email" name="email" id="email" required
+                    <input type="email" name="correo" id="correo" required
                            class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors">
                 </div>
 
                 <div>
                     <label for="password" class="block text-sm font-medium text-slate-700">Contraseña</label>
-                    <input type="password" name="password" id="password" required
+                    <input type="password" name="contrasena" id="contrasena" required
                            class="mt-1 block w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors">
                 </div>
 

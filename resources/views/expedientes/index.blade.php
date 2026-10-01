@@ -1,114 +1,144 @@
 @extends('layouts.app')
 
-@section('title', 'Expedientes')
+@section('title', 'Expedientes - Unifarmacia')
 
 @section('content')
+    @php
+        $cabeceras = [
+            'idPaciente' => 'ID Paciente',
+            'folio'      => 'Folio',
+            'nombre'     => 'Paciente',
+            'creado'     => 'Creación',
+            'modificado' => 'Última mod.',
+            'creador'    => 'Creado por',
+            'estado'     => 'Estado',
+        ];
+    @endphp
+
     <div class="min-h-screen bg-slate-50">
         @include('layouts.navigation')
 
-        <div class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
 
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('dashboard') }}"
-                       class="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </a>
-                    <h1 class="text-2xl font-semibold text-slate-800">Expedientes</h1>
+            <x-breadcrumbs />
+
+            {{-- Encabezado --}}
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Expedientes clínicos</h2>
+                    <p class="text-slate-600 mt-1">Consulta, edita o desactiva los expedientes.</p>
                 </div>
                 <a href="{{ route('expedientes.create') }}"
-                   class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Nuevo expediente
+                   class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    + Nuevo expediente
                 </a>
             </div>
 
+            {{-- Mensaje de éxito --}}
             @if (session('success'))
-                <div class="mb-4 rounded-lg bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">
+                <div class="mb-4 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
                     {{ session('success') }}
                 </div>
             @endif
 
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
+            {{-- Filtros (se aplican al escribir) --}}
+            <form id="filtros" method="GET" action="{{ route('expedientes.index') }}"
+                  class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <input type="hidden" name="sort" value="{{ $sort }}">
+                <input type="hidden" name="dir" value="{{ $dir }}">
+
+                <input type="text" id="f-id" name="id" value="{{ request('id') }}" placeholder="Buscar por ID de paciente"
+                       class="filtro w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="f-folio" name="folio" value="{{ request('folio') }}" placeholder="Buscar por folio"
+                       class="filtro w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="f-nombre" name="nombre" value="{{ request('nombre') }}" placeholder="Buscar por nombre o apellidos"
+                       class="filtro w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </form>
+
+            {{-- Tabla --}}
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-slate-600">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre completo</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">CURP</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Sexo</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Edad</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">IMC</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Creado</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Modificado</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Estado</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+                        @foreach ($cabeceras as $key => $label)
+                            @php
+                                $activa = $sort === $key;
+                                $siguiente = ($activa && $dir === 'asc') ? 'desc' : 'asc';
+                            @endphp
+                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">
+                                <a href="{{ request()->fullUrlWithQuery(['sort' => $key, 'dir' => $siguiente, 'page' => 1]) }}"
+                                   class="inline-flex items-center gap-1 hover:text-blue-600">
+                                    {{ $label }}
+                                    <span class="text-xs {{ $activa ? 'text-blue-600' : 'text-slate-300' }}">
+                                            {{ $activa ? ($dir === 'asc' ? '▲' : '▼') : '↕' }}
+                                        </span>
+                                </a>
+                            </th>
+                        @endforeach
+                        <th class="px-4 py-3 text-right font-semibold">Acciones</th>
                     </tr>
                     </thead>
+
                     <tbody class="divide-y divide-slate-100">
-                    @forelse ($expedientes as $expediente)
-                        <tr class="hover:bg-slate-50 {{ $expediente->trashed() ? 'opacity-50' : '' }}">
-                            <td class="px-4 py-3 text-sm text-slate-400 font-mono">#{{ $expediente->id }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-700">
-                                <a href="{{ route('expedientes.show', $expediente) }}" class="hover:text-indigo-600 font-medium">
-                                    {{ $expediente->nombre_completo }}
-                                </a>
+                    @forelse ($expedientes as $e)
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-4 py-3 text-slate-700">{{ $e->idPaciente }}</td>
+                            <td class="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">{{ $e->folioExpediente }}</td>
+                            <td class="px-4 py-3 text-slate-700">
+                                {{ $e->paciente->nombres }} {{ $e->paciente->apellido1 }} {{ $e->paciente->apellido2 }}
                             </td>
-                            <td class="px-4 py-3 text-sm text-slate-500 font-mono">{{ $expediente->curp }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-500 capitalize">{{ $expediente->sexo }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-500">
-                                {{ $expediente->fecha_nacimiento->age }} años
+                            <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ $e->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ $e->updated_at->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3 text-slate-600">
+                                {{ $e->creador ? $e->creador->nombres . ' ' . $e->creador->apellido1 : '—' }}
                             </td>
-                            <td class="px-4 py-3 text-sm text-slate-500">{{ $expediente->imc ?? '—' }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-500">
-                                {{ $expediente->created_at->format('d/m/Y H:i') }}
-                            </td>
-                            <td class="px-4 py-3 text-sm text-slate-500">
-                                {{ $expediente->updated_at->format('d/m/Y H:i') }}
-                            </td>
-                            <td class="px-4 py-3 text-sm">
-                                @if ($expediente->trashed())
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                                        Inactivo
+                            <td class="px-4 py-3">
+                                    <span class="inline-block px-2 py-0.5 rounded text-xs font-medium
+                                        {{ $e->estado === 'activo' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
+                                        {{ ucfirst($e->estado) }}
                                     </span>
-                                @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                        Activo
-                                    </span>
-                                @endif
                             </td>
-                            <td class="px-4 py-3 text-right text-sm space-x-2 whitespace-nowrap">
-                                @if ($expediente->trashed())
-                                    <form action="{{ route('expedientes.restore', $expediente->id) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="text-indigo-600 hover:text-indigo-800 font-medium">
-                                            Reactivar
-                                        </button>
-                                    </form>
-                                @else
-                                    <a href="{{ route('expedientes.edit', $expediente) }}" class="text-slate-500 hover:text-slate-700 font-medium">
+                            <td class="px-4 py-3">
+                                <div class="flex justify-end items-center gap-2">
+                                    {{-- Botón Ver --}}
+                                    <a href="{{ route('expedientes.show', $e) }}"
+                                       class="px-3 py-1 text-xs font-medium text-slate-700 bg-slate-100 rounded hover:bg-slate-200 transition-colors">
+                                        Ver
+                                    </a>
+
+                                    {{-- Botón Editar --}}
+                                    <a href="{{ route('expedientes.edit', $e) }}"
+                                       class="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 transition-colors">
                                         Editar
                                     </a>
-                                    <form action="{{ route('expedientes.destroy', $expediente) }}" method="POST" class="inline"
-                                          onsubmit="return confirm('¿Desactivar este expediente?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-500 hover:text-red-700 font-medium">
-                                            Desactivar
-                                        </button>
-                                    </form>
-                                @endif
+
+                                    @if ($e->estado === 'activo')
+                                        <form method="POST" action="{{ route('expedientes.destroy', $e) }}"
+                                              onsubmit="return confirm('¿Desactivar el expediente {{ $e->folioExpediente }}?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="px-3 py-1 text-xs font-medium text-red-700 bg-red-50 rounded hover:bg-red-100 transition-colors">
+                                                Desactivar
+                                            </button>
+                                        </form>
+                                    @else
+                                        <form method="POST" action="{{ route('expedientes.restore', $e) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit"
+                                                    class="px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded hover:bg-emerald-100 transition-colors">
+                                                Reactivar
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="px-4 py-8 text-center text-sm text-slate-400">
-                                No hay expedientes registrados.
+                            <td colspan="8" class="px-4 py-10 text-center text-slate-500">
+                                No se encontraron expedientes.
                             </td>
                         </tr>
                     @endforelse
@@ -116,10 +146,39 @@
                 </table>
             </div>
 
-            <div class="mt-4">
+            {{-- Paginación --}}
+            <div class="mt-6">
                 {{ $expedientes->links() }}
             </div>
-
-        </div>
+        </main>
     </div>
+
+    {{-- Filtrado al escribir: espera 400 ms y envía el formulario --}}
+    <script>
+        (function () {
+            const form = document.getElementById('filtros');
+            let timer;
+
+            // Recuperar el foco en el campo donde se estaba escribiendo
+            const ultimo = sessionStorage.getItem('expedientes-foco');
+            if (ultimo) {
+                const campo = document.getElementById(ultimo);
+                if (campo) {
+                    campo.focus();
+                    campo.setSelectionRange(campo.value.length, campo.value.length);
+                }
+                sessionStorage.removeItem('expedientes-foco');
+            }
+
+            document.querySelectorAll('.filtro').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    clearTimeout(timer);
+                    timer = setTimeout(function () {
+                        sessionStorage.setItem('expedientes-foco', input.id);
+                        form.submit();
+                    }, 400);
+                });
+            });
+        })();
+    </script>
 @endsection

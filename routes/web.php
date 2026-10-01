@@ -25,7 +25,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/expedientes/{expediente}/editar', [ExpedienteController::class, 'edit'])->name('expedientes.edit');
     Route::put('/expedientes/{expediente}', [ExpedienteController::class, 'update'])->name('expedientes.update');
     Route::delete('/expedientes/{expediente}', [ExpedienteController::class, 'destroy'])->name('expedientes.destroy');
-    Route::patch('/expedientes/{id}/restaurar', [ExpedienteController::class, 'restore'])->name('expedientes.restore');
+    Route::patch('/expedientes/{expediente}/restaurar', [ExpedienteController::class, 'restore'])->name('expedientes.restore');
 
     // User administration (Health Officer Only)
     Route::middleware(['can:manage-users'])->group(function () {

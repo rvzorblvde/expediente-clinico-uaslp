@@ -9,8 +9,8 @@ class DashboardController extends Controller
 {
     public function dashboard()
     {
-        $expedientesActivos = Expediente::count();
-        $expedientesInactivos = Expediente::onlyTrashed()->count();
+        $expedientesActivos = Expediente::where('estado', 'activo')->count();
+        $expedientesInactivos = Expediente::where('estado', '!=', 'activo')->count();
         $totalUsuarios = User::count();
 
         return view('dashboard', compact(
