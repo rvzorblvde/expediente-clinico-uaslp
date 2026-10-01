@@ -17,6 +17,9 @@ return new class extends Migration
             $table->unsignedBigInteger('idPaciente')->unique();              // FK con el paciente
             $table->foreign('idPaciente')->references('idPaciente')->on('pacientes')->onDelete('restrict');
 
+            $table->unsignedBigInteger('idUsuarioCreador')->nullable();
+            $table->foreign('idUsuarioCreador')->references('idUsuario')->on('users')->onDelete('restrict');
+
             $table->string('estado', 20)->default('activo');
 
             // En lugar de inventar campos de fecha custom, usamos los nativos de Laravel

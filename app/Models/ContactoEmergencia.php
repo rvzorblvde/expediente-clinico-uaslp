@@ -11,4 +11,14 @@ class ContactoEmergencia extends Model
     public $timestamps = false;
 
     protected $fillable = ['idPaciente', 'nombres', 'apellido1', 'apellido2', 'parentesco'];
+
+    public function telefonos()
+    {
+        return $this->hasMany(ContactoTelefono::class, 'idContacto', 'idContacto');
+    }
+
+    public function correos()
+    {
+        return $this->hasMany(ContactoCorreo::class, 'idContacto', 'idContacto');
+    }
 }

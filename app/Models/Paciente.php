@@ -9,6 +9,10 @@ class Paciente extends Model
     protected $table = 'pacientes';
     protected $primaryKey = 'idPaciente';
 
+    protected $casts = [
+        'fechaNac' => 'date:Y-m-d',
+    ];
+
     protected $fillable = [
         'nombres',
         'apellido1',
@@ -19,4 +23,19 @@ class Paciente extends Model
         'lugarProcedencia',
         'lugarResidencia'
     ];
+
+    public function telefonos()
+    {
+        return $this->hasMany(PacienteTelefono::class, 'idPaciente', 'idPaciente');
+    }
+
+    public function correos()
+    {
+        return $this->hasMany(PacienteCorreo::class, 'idPaciente', 'idPaciente');
+    }
+
+    public function contactos()
+    {
+        return $this->hasMany(ContactoEmergencia::class, 'idPaciente', 'idPaciente');
+    }
 }

@@ -39,7 +39,7 @@ class User extends Authenticatable
     /**
      * Obtiene el nombre de la columna que almacena la contraseña.
      */
-    public function getAuthPasswordName()
+    public function getAuthPasswordName():string
     {
         return 'contrasena';
     }
@@ -47,8 +47,13 @@ class User extends Authenticatable
     /**
      * Obtiene el nombre de la columna usada para recordar sesión.
      */
-    public function getAuthIdentifierName()
+    public function getAuthIdentifierName():string
     {
-        return 'correo';
+        return 'idUsuario';
+    }
+
+    public function isResponsableSanitario(): bool
+    {
+        return $this->idRol == 1;
     }
 }
