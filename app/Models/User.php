@@ -2,54 +2,53 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    const ROLE_RESPONSABLE = 'responsable_sanitario';
-    const ROLE_TRABAJADOR = 'trabajador';
-    const ROLE_ALUMNO = 'alumno';
+    protected $table = 'users';
+    protected $primaryKey = 'idUsuario';
 
-    const DOMINIO_RESPONSABLE = '@admin.edu.mx';
+    protected $fillable = [
+        'idRol',
+        'nombres',
+        'apellido1',
+        'apellido2',
+        'correo',
+        'contrasena',
+        'estado',
+    ];
+
+    protected $hidden = [
+        'contrasena',           // Se oculta la contraseña al hacer consultas
+        'remember_token',
+    ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'contrasena' => 'hashed',           // Encriptar la contraseña automáticamente
         ];
     }
 
-    protected static function booted(): void
+    /**
+     * Obtiene el nombre de la columna que almacena la contraseña.
+     */
+    public function getAuthPasswordName()
     {
-        static::creating(function (User $user) {
-            // Auto-asignar rol si el correo pertenece al dominio del responsable
-            if (str_ends_with($user->email, self::DOMINIO_RESPONSABLE)) {
-                $user->role = self::ROLE_RESPONSABLE;
-            }
-
-            // Solo puede haber un responsable sanitario
-            if ($user->role === self::ROLE_RESPONSABLE
-                && self::where('role', self::ROLE_RESPONSABLE)->exists()) {
-                throw ValidationException::withMessages([
-                    'email' => 'Ya existe un responsable sanitario registrado en el sistema.',
-                ]);
-            }
-        });
+        return 'contrasena';
     }
 
-    public function isResponsableSanitario(): bool
+    /**
+     * Obtiene el nombre de la columna usada para recordar sesión.
+     */
+    public function getAuthIdentifierName()
     {
-        return $this->role === self::ROLE_RESPONSABLE;
+        return 'correo';
     }
 }
