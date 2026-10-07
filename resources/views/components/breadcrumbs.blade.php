@@ -11,6 +11,9 @@
             'expedientes.create' => ['Expedientes' => route('expedientes.index'), 'Nuevo expediente' => null],
             'expedientes.edit' => ['Expedientes' => route('expedientes.index'), 'Editar expediente' => null],
             'usuarios.index' => ['Usuarios del sistema' => null],
+            'medicamentos.index' => ['Medicamentos' => null],
+            'medicamentos.create' => ['Medicamentos' => route('medicamentos.index'), 'Nuevo medicamento' => null],
+            'medicamentos.edit' => ['Medicamentos' => route('medicamentos.index'), 'Editar medicamento' => null],
             default => [],
         };
     }
