@@ -17,4 +17,9 @@ class Medicamento extends Model
         'requiereReceta',
         'esControlado'
     ];
+
+    protected $casts = [
+        'requiereReceta' => 'boolean',
+        'esControlado'   => 'boolean',
+    ];
 }
