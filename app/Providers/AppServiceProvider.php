@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate;
+use App\Models\User;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Definir la regla (Gate) para gestionar usuarios (Solo Responsable Sanitario / idRol == 1)
+        Gate::define('manage-users', function (User $user) {
+            return $user->isResponsableSanitario();
+        });
     }
 }
