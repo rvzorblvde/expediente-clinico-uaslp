@@ -26,6 +26,16 @@ class AuthController extends Controller
             'password' => $credentials['contrasena']
         ];
 
+        // Buscar al usuario por correo antes de autenticar
+        $user = \App\Models\User::where('correo', $credentials['correo'])->first();
+
+        // Verificar si el usuario existe y si su estado es inactivo
+        if ($user && $user->estado !== 'activo') {
+            return back()->withErrors([
+                'correo' => 'Esta cuenta se encuentra inactiva. Contacte al administrador.',
+            ])->onlyInput('correo');
+        }
+
         // Redirigir al dashboard
         if (Auth::attempt($attemptData, $request->boolean('remember'))) {
             $request->session()->regenerate();
