@@ -1,58 +1,97 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Expediente Clínico Farmacéutico UASLP - Guía de Configuración Local
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![PHP](https://img.shields.io/badge/php-%23777BB4.svg?style=for-the-badge&logo=php&logoColor=white)
+![Laravel](https://img.shields.io/badge/laravel-%23FF2D20.svg?style=for-the-badge&logo=laravel&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 
-## About Laravel
+## Pasos para levantar el entorno de desarrollo
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/rvzorblvde/expediente-clinico-uaslp.git
+   ```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+2. **Acceder al proyecto**
+   Abre una terminal y navega hasta encontrarte dentro de la carpeta raíz del proyecto clonado.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+3. **Instalar dependencias de Node y PHP**
+   ```bash
+   npm ci
+   composer install
+   ```
+   > **¿Por qué `npm ci` y no `npm install`?**
+   > `npm install` recalcula las dependencias y puede actualizar versiones menores, modificando el archivo `package-lock.json` y generando cambios no deseados en Git. `npm ci` (Clean Install) lee estrictamente el lockfile e instala las versiones exactas definidas por el equipo, garantizando un entorno idéntico y limpio. Así evitamos hacer un commit innecesario.
+   >
+   > **¿Por qué `composer install`?**
+   > Cumple la misma función para PHP: lee el archivo `composer.lock` para descargar las versiones exactas de las librerías necesarias.
 
-## Learning Laravel
+4. **Auditoría de npm (Opcional)**
+   Si la terminal muestra errores críticos de seguridad tras instalar los paquetes de Node, ejecuta la auditoría:
+   ```bash
+   npm audit
+   ```
+   *(Nota: Evita usar `npm audit fix` a menos que planees subir las actualizaciones de seguridad al repositorio, ya que modificará el `package-lock.json`).*
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+5. **Crear el archivo de entorno**
+   Crea un nuevo archivo llamado `.env` en la raíz del proyecto.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+6. **Copiar la configuración base**
+   Copia todo el contenido del archivo `.env.example` y pégalo dentro del nuevo `.env` (alternativamente, ejecuta `cp .env.example .env`).
+   Una vez copiado, genera la clave de encriptación de la aplicación:
+   ```bash
+   php artisan key:generate
+   ```
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+7. **Configurar la base de datos**
+   Abre el archivo `.env`, quita los comentarios de las líneas referentes a la base de datos (las que empiezan con `DB_`) y coloca las credenciales locales de tu proyecto.
 
-## Agentic Development
+   ```dotenv
+    DB_CONNECTION=pgsql
+    DB_HOST=127.0.0.1
+    DB_PORT=5432
+    DB_DATABASE=nombre
+    DB_USERNAME=root
+    DB_PASSWORD=
+   ```
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Las credenciales y nombre de `DB_DATABASE`, `DB_USERNAME` y `DB_PASSWORD` pueden llegar a cambiar. **Este archivo jamás debe subirse al repositorio**.
 
-```bash
-composer require laravel/boost --dev
 
-php artisan boost:install
-```
+8. **Levantar los contenedores de Docker**
+   ```bash
+   docker compose up -d
+   ```
+   > **¿Para qué sirve esto?**
+   > Este comando lee el archivo `docker-compose.yml` y levanta los servicios necesarios (como la base de datos PostgreSQL) en contenedores aislados. El parámetro `-d` (detached) ejecuta estos procesos en segundo plano, liberando la terminal para poder seguir escribiendo comandos.
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+9. **Migrar y poblar la base de datos**
+   Asegúrate de esperar unos segundos después del paso anterior para que la base de datos termine de iniciar, y luego ejecuta:
+   ```bash
+   php artisan migrate:fresh --seed
+   ```
+   > **¿Para qué sirve esto?**
+   > Realiza dos tareas fundamentales en el entorno de desarrollo:
+   > 1. **`migrate:fresh`**: Borra todas las tablas existentes y ejecuta las migraciones desde cero para construir una estructura limpia.
+   > 2. **`--seed`**: Inserta datos iniciales o de prueba (catálogos, usuarios por defecto, roles) para que la aplicación no esté vacía y pueda probarse de inmediato.
 
-## Contributing
+10. **Correr el proyecto**
+    Para que el sistema funcione completamente, necesitas levantar tanto el servidor web de PHP como el servidor de desarrollo de los assets (JS/CSS). Puedes hacerlo de tres formas:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    * **Opción 1 (Múltiples terminales):**
+      Abre una terminal y ejecuta:
+      ```bash
+      npm run dev
+      ```
+      Abre una segunda terminal y ejecuta:
+      ```bash
+      php artisan serve
+      ```
 
-## Code of Conduct
+    * **Opción 2 (Un solo comando en segundo plano):**
+      Ejecuta ambos procesos en la misma ventana:
+      ```bash
+      npm run dev & php artisan serve
+      ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
