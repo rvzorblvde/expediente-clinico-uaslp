@@ -21,6 +21,7 @@ class User extends Authenticatable
         'correo',
         'contrasena',
         'estado',
+        'reset_requested',
     ];
 
     protected $hidden = [

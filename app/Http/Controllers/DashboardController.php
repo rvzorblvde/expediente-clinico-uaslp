@@ -12,9 +12,12 @@ class DashboardController extends Controller
         $expedientesActivos = Expediente::where('estado', 'activo')->count();
         $expedientesInactivos = Expediente::where('estado', '!=', 'activo')->count();
         $totalUsuarios = User::count();
+        
+        // Contar cuántos usuarios tienen una solicitud de restablecimiento pendiente
+        $solicitudesPendientes = User::where('reset_requested', true)->count();
 
         return view('dashboard', compact(
-            'expedientesActivos', 'expedientesInactivos', 'totalUsuarios'
+            'expedientesActivos', 'expedientesInactivos', 'totalUsuarios', 'solicitudesPendientes'
         ));
     }
 }

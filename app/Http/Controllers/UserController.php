@@ -12,7 +12,10 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $users = User::with('role')->paginate(10);
+        $users = User::with('role')
+            ->orderBy('reset_requested', 'desc')
+            ->paginate(10);
+
         return view('usuarios.index', compact('users'));
     }
 
@@ -25,22 +28,22 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'idRol'     => ['required', 'exists:roles,idRol'],
-            'nombres'   => ['required', 'string', 'max:100'],
+            'idRol' => ['required', 'exists:roles,idRol'],
+            'nombres' => ['required', 'string', 'max:100'],
             'apellido1' => ['required', 'string', 'max:100'],
             'apellido2' => ['nullable', 'string', 'max:100'],
-            'correo'    => ['required', 'email', 'max:255', 'unique:users,correo'],
-            'contrasena'=> ['required', 'string', 'min:6'],
+            'correo' => ['required', 'email', 'max:255', 'unique:users,correo'],
+            'contrasena' => ['required', 'string', 'min:6'],
         ]);
 
         User::create([
-            'idRol'     => $validated['idRol'],
-            'nombres'   => $validated['nombres'],
+            'idRol' => $validated['idRol'],
+            'nombres' => $validated['nombres'],
             'apellido1' => $validated['apellido1'],
             'apellido2' => $validated['apellido2'],
-            'correo'    => $validated['correo'],
-            'contrasena'=> $validated['contrasena'], // El modelo se encarga de aplicarle Hash automáticamente
-            'estado'    => 'activo',
+            'correo' => $validated['correo'],
+            'contrasena' => $validated['contrasena'], // El modelo se encarga de aplicarle Hash automáticamente
+            'estado' => 'activo',
         ]);
 
         return redirect()->route('usuarios.index')
@@ -56,12 +59,14 @@ class UserController extends Controller
     public function update(Request $request, User $usuario)
     {
         $validated = $request->validate([
-            'idRol'     => ['required', 'exists:roles,idRol'],
-            'nombres'   => ['required', 'string', 'max:100'],
+            'idRol' => ['required', 'exists:roles,idRol'],
+            'nombres' => ['required', 'string', 'max:100'],
             'apellido1' => ['required', 'string', 'max:100'],
             'apellido2' => ['nullable', 'string', 'max:100'],
-            'correo'    => [
-                'required', 'email', 'max:255',
+            'correo' => [
+                'required',
+                'email',
+                'max:255',
                 Rule::unique('users', 'correo')->ignore($usuario->idUsuario, 'idUsuario'),
             ],
         ]);
@@ -81,16 +86,77 @@ class UserController extends Controller
         return back()->with('success', "Estado del usuario actualizado a {$nuevoEstado}.");
     }
 
-    public function resetPassword(Request $request, User $usuario)
+    public function resetPassword(Request $request, User $user)
     {
         $validated = $request->validate([
             'contrasena' => ['required', 'string', 'min:6'],
         ]);
 
-        $usuario->update([
-            'contrasena' => $validated['contrasena'],
+        $user->update([
+            'contrasena' => Hash::make($validated['contrasena']),
+            'reset_requested' => false,
         ]);
 
         return back()->with('success', 'Credenciales restablecidas exitosamente.');
+    }
+
+    public function showChangePasswordForm()
+    {
+        return view('usuarios.change-password');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'contrasena' => ['required', 'string', 'min:6', 'confirmed'],
+        ], [
+            'current_password.current_password' => 'La contraseña actual es incorrecta.',
+            'contrasena.required' => 'Por favor, ingresa una nueva contraseña.',
+            'contrasena.min' => 'La nueva contraseña debe tener al menos 6 caracteres.',
+            'contrasena.confirmed' => 'La confirmación de la contraseña no coincide.',
+        ]);
+
+        $user = auth()->user();
+
+        // Verificar si la nueva contraseña fue utilizada en los últimos 3 meses
+        $tresMesesAtras = now()->subMonths(3);
+        
+        $historialReciente = \App\Models\PasswordHistory::where('idUsuario', $user->idUsuario)
+            ->where('created_at', '>=', $tresMesesAtras)
+            ->get();
+
+        foreach ($historialReciente as $historial) {
+            if (Hash::check($validated['contrasena'], $historial->contrasena)) {
+                return back()->withErrors([
+                    'contrasena' => 'No puedes utilizar una contraseña que haya sido empleada en los últimos 3 meses.'
+                ])->withInput();
+            }
+        }
+
+        // Verificar contra la contraseña actual del usuario
+        if (Hash::check($validated['contrasena'], $user->contrasena)) {
+            return back()->withErrors([
+                'contrasena' => 'La nueva contraseña no puede ser igual a tu contraseña actual.'
+            ])->withInput();
+        }
+
+        // Guardar la contraseña actual en el historial antes de cambiarla
+        \App\Models\PasswordHistory::create([
+            'idUsuario' => $user->idUsuario,
+            'contrasena' => $user->contrasena,
+        ]);
+
+        // Actualizar con la nueva contraseña
+        $user->update([
+            'contrasena' => $validated['contrasena'],
+        ]);
+
+        // Depurar historiales más antiguos de 3 meses para limpieza
+        \App\Models\PasswordHistory::where('idUsuario', $user->idUsuario)
+            ->where('created_at', '<', $tresMesesAtras)
+            ->delete();
+
+        return back()->with('success', 'Contraseña actualizada exitosamente.');
     }
 }

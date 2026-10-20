@@ -37,14 +37,14 @@
                 </div>
 
                 <!-- Ícono con inicial y color dinámico -->
-                <button type="button"
-                        onclick="document.getElementById('userDropdown').classList.toggle('hidden')"
-                        class="flex items-center justify-center w-10 h-10 rounded-full {{ $colorAleatorio }} text-white font-bold hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00b5e2] transition-all shadow-sm">
+                <button type="button" onclick="document.getElementById('userDropdown').classList.toggle('hidden')"
+                    class="flex items-center justify-center w-10 h-10 rounded-full {{ $colorAleatorio }} text-white font-bold hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00b5e2] transition-all shadow-sm">
                     {{ strtoupper(substr(auth()->user()->nombres, 0, 1)) }}
                 </button>
 
                 <!-- Menu desplegable -->
-                <div id="userDropdown" class="hidden absolute right-0 top-12 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border border-slate-200 ring-1 ring-black ring-opacity-5">
+                <div id="userDropdown"
+                    class="hidden absolute right-0 top-12 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border border-slate-200 ring-1 ring-black ring-opacity-5">
                     <!-- Rol del usuario -->
                     <div class="px-4 py-2 border-b border-slate-100">
                         <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">
@@ -55,9 +55,16 @@
                         </p>
                     </div>
 
+                    <!-- Opción de Cambiar Contraseña -->
+                    <a href="{{ route('password.change') }}"
+                        class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                        Cambiar Contraseña
+                    </a>
+
                     <form method="POST" action="{{ route('logout') }}" class="w-full">
                         @csrf
-                        <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50 transition-colors">
+                        <button type="submit"
+                            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-slate-50 transition-colors">
                             Cerrar Sesión
                         </button>
                     </form>
