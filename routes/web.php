@@ -42,6 +42,10 @@ Route::middleware(['auth'])->group(function () {
     // User administration (Health Officer Only)
     Route::middleware(['can:manage-users'])->group(function () {
         Route::resource('/usuarios', UserController::class)->except('show');
-        Route::post('/usuarios/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::put('/usuarios/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
     });
+
+    // Cambio de contraseña propio (cualquier usuario autenticado)
+    Route::get('/mi-perfil/cambiar-contrasena', [UserController::class, 'showChangePasswordForm'])->name('password.change');
+    Route::put('/mi-perfil/cambiar-contrasena', [UserController::class, 'updatePassword'])->name('password.update');
 });

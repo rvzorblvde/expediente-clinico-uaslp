@@ -14,7 +14,7 @@ class AuthController extends Controller
     }
 
     // Validar credenciales para el inicio de sesión
-    public function login (Request $request)
+    public function login(Request $request)
     {
         $credentials = $request->validate([
             'correo' => ['required', 'email'],
@@ -49,13 +49,30 @@ class AuthController extends Controller
     }
 
     // Request a password change to the admin
-    public function pwResetRequest (Request $request)
+    public function pwResetRequest(Request $request)
     {
-        // Lógica pendiente para notificar al responsable sanitario
+        $request->validate([
+            'correo' => ['required', 'email'],
+        ], [
+            'correo.required' => 'Por favor, ingresa tu correo electrónico.',
+            'correo.email' => 'El formato del correo electrónico no es válido.',
+        ]);
+
+        $user = \App\Models\User::where('correo', $request->correo)->first();
+
+        if (!$user) {
+            return back()->withErrors(['correo' => 'El correo electrónico ingresado no está registrado en el sistema.']);
+        }
+
+        $user->update([
+            'reset_requested' => true
+        ]);
+
+        return back()->with('status', 'Se ha enviado la solicitud de restablecimiento al administrador correctamente.');
     }
 
     // Close the session
-    public function logout (Request $request)
+    public function logout(Request $request)
     {
         Auth::logout();
 

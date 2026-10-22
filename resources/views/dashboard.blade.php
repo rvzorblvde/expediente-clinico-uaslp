@@ -75,12 +75,25 @@
                 @foreach ($modulos as $m)
                     @continue($m['admin'] && ! $esAdmin)
 
-                    @php $disponible = Route::has($m['ruta']); @endphp
+                    @php 
+                        $disponible = Route::has($m['ruta']); 
+                        // Verificamos si es el módulo de usuarios y hay solicitudes pendientes
+                        $esModuloUsuarios = ($m['ruta'] === 'usuarios.index');
+                        $tieneSolicitudes = $esModuloUsuarios && isset($solicitudesPendientes) && $solicitudesPendientes > 0;
+                    @endphp
 
                     <a href="{{ $disponible ? route($m['ruta']) : '#' }}"
                        @unless ($disponible) aria-disabled="true" @endunless
-                       class="block p-6 bg-white rounded-xl border border-slate-200 shadow-sm transition-all group
-                              {{ $disponible ? 'hover:shadow-md hover:border-blue-400' : 'opacity-60 cursor-not-allowed' }}">
+                       class="block p-6 bg-white rounded-xl border shadow-sm transition-all group relative
+                              {{ $tieneSolicitudes ? 'border-amber-400 ring-2 ring-amber-200 hover:shadow-md' : ($disponible ? 'hover:shadow-md hover:border-blue-400 border-slate-200' : 'opacity-60 cursor-not-allowed border-slate-200') }}">
+                        
+                        {{-- Insignia de solicitudes pendientes --}}
+                        @if ($tieneSolicitudes)
+                            <span class="absolute top-4 right-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 animate-pulse">
+                                {{ $solicitudesPendientes }} pendiente(s)
+                            </span>
+                        @endif
+
                         <div class="flex items-center space-x-4">
                             <div class="p-3 bg-blue-50 text-blue-600 rounded-lg transition-colors
                                         {{ $disponible ? 'group-hover:bg-blue-600 group-hover:text-white' : '' }}">
