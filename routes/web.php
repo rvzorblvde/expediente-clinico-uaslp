@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MedicamentoController;
+use App\Http\Controllers\ReporteController;
 
 // Public Routes (Authentication)
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login.form');
@@ -37,7 +38,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/medicamentos/{medicamento}', [MedicamentoController::class, 'update'])->name('medicamentos.update');
     Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
 
-    
+    //Estadísticas y reportes
+
+    Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+
 
     // User administration (Health Officer Only)
     Route::middleware(['can:manage-users'])->group(function () {

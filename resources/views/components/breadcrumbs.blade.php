@@ -14,6 +14,7 @@
             'medicamentos.index' => ['Medicamentos' => null],
             'medicamentos.create' => ['Medicamentos' => route('medicamentos.index'), 'Nuevo medicamento' => null],
             'medicamentos.edit' => ['Medicamentos' => route('medicamentos.index'), 'Editar medicamento' => null],
+            'reportes.index' => ['Estadísticas y reportes' => null],
             default => [],
         };
     }
