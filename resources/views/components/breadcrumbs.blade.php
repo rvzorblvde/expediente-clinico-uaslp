@@ -14,6 +14,10 @@
             'medicamentos.index' => ['Medicamentos' => null],
             'medicamentos.create' => ['Medicamentos' => route('medicamentos.index'), 'Nuevo medicamento' => null],
             'medicamentos.edit' => ['Medicamentos' => route('medicamentos.index'), 'Editar medicamento' => null],
+            'farmacovigilancia.index' => ['Farmacovigilancia' => null],
+            'farmacovigilancia.create' => ['Farmacovigilancia' => route('farmacovigilancia.index'), 'Nuevo reporte' => null],
+            'farmacovigilancia.edit' => ['Farmacovigilancia' => route('farmacovigilancia.index'), 'Editar reporte' => null],
+            'farmacovigilancia.show' => ['Farmacovigilancia' => route('farmacovigilancia.index'), 'Detalles del reporte' => null],
             default => [],
         };
     }
