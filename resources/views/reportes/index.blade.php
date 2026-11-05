@@ -28,11 +28,14 @@
                 </div>
             </div>
 
+
             {{-- Tarjetas de Métricas Clave (KPIs) --}}
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Usuarios de Servicio -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Usuarios del servicio</p>
-                    <p class="text-3xl font-extrabold text-slate-900 mt-2">...</p>
+                    <p class="text-3xl font-extrabold text-slate-900 mt-2">{{ $usuariosServicio }}</p>
                     <p class="text-xs text-slate-500 mt-1">Actualmente activos</p>
                 </div>
 
