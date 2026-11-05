@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MedicamentoController;
+use App\Http\Controllers\FarmacovigilanciaController;
 
 // Public Routes (Authentication)
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login.form');
@@ -36,6 +37,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/medicamentos/{medicamento}/editar', [MedicamentoController::class, 'edit'])->name('medicamentos.edit');
     Route::put('/medicamentos/{medicamento}', [MedicamentoController::class, 'update'])->name('medicamentos.update');
     Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
+
+    // Farmacovigilancia
+    Route::get('/farmacovigilancia', [FarmacovigilanciaController::class, 'index'])->name('farmacovigilancia.index');
+    Route::get('/farmacovigilancia/crear', [FarmacovigilanciaController::class, 'create'])->name('farmacovigilancia.create');
+    Route::post('/farmacovigilancia', [FarmacovigilanciaController::class, 'store'])->name('farmacovigilancia.store');
+    Route::get('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'show'])->name('farmacovigilancia.show');
+    Route::get('/farmacovigilancia/{farmacovigilancia}/editar', [FarmacovigilanciaController::class, 'edit'])->name('farmacovigilancia.edit');
+    Route::put('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'update'])->name('farmacovigilancia.update');
+    Route::delete('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'destroy'])->name('farmacovigilancia.destroy');
 
     
 
