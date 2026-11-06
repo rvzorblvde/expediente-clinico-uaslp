@@ -7,6 +7,7 @@ use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MedicamentoController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\FarmacovigilanciaController;
 
 // Public Routes (Authentication)
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login.form');
@@ -41,6 +42,16 @@ Route::middleware(['auth'])->group(function () {
     //Estadísticas y reportes
     Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
 
+    // Farmacovigilancia
+    Route::get('/farmacovigilancia', [FarmacovigilanciaController::class, 'index'])->name('farmacovigilancia.index');
+    Route::get('/farmacovigilancia/crear', [FarmacovigilanciaController::class, 'create'])->name('farmacovigilancia.create');
+    Route::post('/farmacovigilancia', [FarmacovigilanciaController::class, 'store'])->name('farmacovigilancia.store');
+    Route::get('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'show'])->name('farmacovigilancia.show');
+    Route::get('/farmacovigilancia/{farmacovigilancia}/editar', [FarmacovigilanciaController::class, 'edit'])->name('farmacovigilancia.edit');
+    Route::put('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'update'])->name('farmacovigilancia.update');
+    Route::delete('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'destroy'])->name('farmacovigilancia.destroy');
+
+    
 
     // User administration (Health Officer Only)
     Route::middleware(['can:manage-users'])->group(function () {

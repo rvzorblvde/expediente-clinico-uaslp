@@ -46,7 +46,7 @@
             [
                 'nombre' => 'Estadísticas y reportes',
                 'desc' => 'Consultar métricas y reportes del sistema.',
-                'ruta' => 'estadisticas.index',
+                'ruta' => 'reportes.index',
                 'admin' => false,
 'icono'  => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'            ],
             [
@@ -75,8 +75,8 @@
                 @foreach ($modulos as $m)
                     @continue($m['admin'] && ! $esAdmin)
 
-                    @php 
-                        $disponible = Route::has($m['ruta']); 
+                    @php
+                        $disponible = Route::has($m['ruta']);
                         // Verificamos si es el módulo de usuarios y hay solicitudes pendientes
                         $esModuloUsuarios = ($m['ruta'] === 'usuarios.index');
                         $tieneSolicitudes = $esModuloUsuarios && isset($solicitudesPendientes) && $solicitudesPendientes > 0;
@@ -86,7 +86,7 @@
                        @unless ($disponible) aria-disabled="true" @endunless
                        class="block p-6 bg-white rounded-xl border shadow-sm transition-all group relative
                               {{ $tieneSolicitudes ? 'border-amber-400 ring-2 ring-amber-200 hover:shadow-md' : ($disponible ? 'hover:shadow-md hover:border-blue-400 border-slate-200' : 'opacity-60 cursor-not-allowed border-slate-200') }}">
-                        
+
                         {{-- Insignia de solicitudes pendientes --}}
                         @if ($tieneSolicitudes)
                             <span class="absolute top-4 right-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 animate-pulse">
