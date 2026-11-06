@@ -41,8 +41,8 @@
 
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Usuarios nuevos</p>
-                    <p class="text-3xl font-extrabold text-blue-600 mt-2">...</p>
-                    <p class="text-xs text-slate-500 mt-1">En el periodo analizado</p>
+                    <p class="text-3xl font-extrabold text-blue-600 mt-2">{{ $usuariosNuevos }}</p>
+                    <p class="text-xs text-slate-500 mt-1 capitalize">{{ $etiquetaPeriodo }}</p>
                 </div>
 
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
