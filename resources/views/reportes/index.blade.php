@@ -47,13 +47,13 @@
 
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Usuarios en pausa</p>
-                    <p class="text-3xl font-extrabold text-amber-600 mt-2">...</p>
+                    <p class="text-3xl font-extrabold text-amber-600 mt-2">{{ $usuariosPausa }}</p>
                     <p class="text-xs text-slate-500 mt-1">Temporalmente inactivos</p>
                 </div>
 
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Variación</p>
-                    <p class="text-3xl font-extrabold text-emerald-600 mt-2">%</p>
+                    <p class="text-3xl font-extrabold {{ $colorVariacion }} mt-2">{{ $variacion }}</p>
                     <p class="text-xs text-slate-500 mt-1">Respecto al periodo anterior</p>
                 </div>
             </div>
