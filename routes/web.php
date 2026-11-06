@@ -39,7 +39,6 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
 
     //Estadísticas y reportes
-
     Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
 
 
