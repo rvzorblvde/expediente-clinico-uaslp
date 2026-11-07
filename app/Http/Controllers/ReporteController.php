@@ -98,6 +98,19 @@ class ReporteController extends Controller
             $datosPausaPorMes[]   = $pausaMes ? $pausaMes->total : 0;
         }
 
+        //Grafica de problemas de salud analizados
+        $problemasSalud = DB::table('antecedentes')
+            ->select('nombre', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('nombre')
+            ->where('nombre', '!=', '')
+            ->groupBy('nombre')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get();
+
+        $problemasLabels = $problemasSalud->pluck('nombre')->toArray();
+        $problemasData   = $problemasSalud->pluck('total')->toArray();
+
 
         return view('reportes.index', compact(
             'usuariosServicio',
@@ -114,7 +127,9 @@ class ReporteController extends Controller
             'labelsMeses',
             'datosNuevosPorMes',
             'datosActivosPorMes',
-            'datosPausaPorMes'
+            'datosPausaPorMes',
+            'problemasLabels',
+            'problemasData'
         ));
     }
 }

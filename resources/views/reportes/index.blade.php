@@ -123,6 +123,26 @@
 
                 </div>
             </div>
+            {{-- Sección: Problemas de salud analizados y Medicamentos --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+
+                {{-- Gráfica 4: Problemas de salud analizados --}}
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-base font-bold text-slate-900 mb-4">Problemas de salud analizados</h3>
+                    <div class="relative h-64">
+                        <canvas id="chartProblemasSalud"></canvas>
+                    </div>
+                </div>
+
+                {{-- Espacio reservado para la siguiente gráfica: Medicamentos analizados --}}
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-base font-bold text-slate-900 mb-4">Medicamentos analizados</h3>
+                    <div class="h-64 flex items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-400 text-sm">
+                        [ Próximamente: Medicamentos analizados ]
+                    </div>
+                </div>
+
+            </div>
 
             {{-- Scripts de Chart.js --}}
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -243,6 +263,40 @@
                                 },
                                 x: {
                                     ticks: { color: '#64748B' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                    // 4. Gráfica de Barras Horizontales: Problemas de salud analizados
+                    const ctxProblemas = document.getElementById('chartProblemasSalud').getContext('2d');
+                    new Chart(ctxProblemas, {
+                        type: 'bar',
+                        data: {
+                            labels: {!! json_encode($problemasLabels) !!},
+                            datasets: [{
+                                label: 'Número de casos',
+                                data: {!! json_encode($problemasData) !!},
+                                backgroundColor: '#60A5FA',
+                                borderRadius: 4,
+                                barPercentage: 0.65
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0, color: '#64748B' },
+                                    grid: { color: '#F1F5F9' }
+                                },
+                                y: {
+                                    ticks: { color: '#334155', font: { size: 12 } },
                                     grid: { display: false }
                                 }
                             }
