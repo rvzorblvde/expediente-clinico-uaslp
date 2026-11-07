@@ -45,12 +45,14 @@
                     <p class="text-xs text-slate-500 mt-1 capitalize">{{ $etiquetaPeriodo }}</p>
                 </div>
 
+                <!--Usuarios en pausa -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Usuarios en pausa</p>
                     <p class="text-3xl font-extrabold text-amber-600 mt-2">{{ $usuariosPausa }}</p>
                     <p class="text-xs text-slate-500 mt-1">Temporalmente inactivos</p>
                 </div>
 
+                <!-- Varaicion -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Variación</p>
                     <p class="text-3xl font-extrabold {{ $colorVariacion }} mt-2">{{ $variacion }}</p>
@@ -100,6 +102,28 @@
 
             </div>
 
+            {{-- Sección: Variación de usuarios (Activos vs En pausa por periodo) --}}
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+
+                    {{-- Gráfica de 2 líneas --}}
+                    <div class="lg:col-span-2">
+                        <h3 class="text-base font-bold text-slate-900 mb-4">Variación de usuarios</h3>
+                        <div class="relative h-64">
+                            <canvas id="chartVariacionUsuarios"></canvas>
+                        </div>
+                    </div>
+
+                    {{-- Resumen porcentual lateral --}}
+                    <div class="flex flex-col items-center justify-center text-center p-6 bg-slate-50 rounded-xl border border-slate-100">
+                        <p class="text-sm font-bold text-slate-700">Variación de usuarios</p>
+                        <p class="text-5xl font-extrabold {{ $colorVariacion }} my-3">{{ $variacion }}</p>
+                        <p class="text-xs text-slate-500">Respecto al periodo anterior</p>
+                    </div>
+
+                </div>
+            </div>
+
             {{-- Scripts de Chart.js --}}
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script>
@@ -134,7 +158,7 @@
                         }
                     });
 
-                    // 2. Gráfica de Línea
+                    // 2. Gráfica de Línea (Usuarios nuevos por mes)
                     const ctxNuevos = document.getElementById('chartNuevos').getContext('2d');
                     new Chart(ctxNuevos, {
                         type: 'line',
@@ -163,10 +187,58 @@
                             scales: {
                                 y: {
                                     beginAtZero: true,
-                                    ticks: {
-                                        precision: 0,
-                                        color: '#64748B'
-                                    },
+                                    ticks: { precision: 0, color: '#64748B' },
+                                    grid: { color: '#F1F5F9' }
+                                },
+                                x: {
+                                    ticks: { color: '#64748B' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+
+                    // 3. Gráfica de Variación de usuarios (Activos vs En pausa)
+                    const ctxVar = document.getElementById('chartVariacionUsuarios').getContext('2d');
+                    new Chart(ctxVar, {
+                        type: 'line',
+                        data: {
+                            labels: {!! json_encode($labelsMeses) !!},
+                            datasets: [
+                                {
+                                    label: 'Activos',
+                                    data: {!! json_encode($datosActivosPorMes) !!},
+                                    borderColor: '#16A34A',
+                                    backgroundColor: '#16A34A',
+                                    pointRadius: 4,
+                                    borderWidth: 2.5,
+                                    tension: 0.3
+                                },
+                                {
+                                    label: 'En pausa',
+                                    data: {!! json_encode($datosPausaPorMes) !!},
+                                    borderColor: '#3B82F6',
+                                    backgroundColor: '#3B82F6',
+                                    pointRadius: 4,
+                                    borderWidth: 2.5,
+                                    tension: 0.3
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom',
+                                    labels: { usePointStyle: true, boxWidth: 8 }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0, color: '#64748B' },
                                     grid: { color: '#F1F5F9' }
                                 },
                                 x: {

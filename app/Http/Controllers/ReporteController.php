@@ -80,6 +80,25 @@ class ReporteController extends Controller
             $datosNuevosPorMes[] = $altasPorMes[$m] ?? 0;
         }
 
+        //Grafica de variacion de usuarios
+        $estadosPorMes = DB::table('expedientes')
+            ->selectRaw('EXTRACT(MONTH FROM created_at) as mes, estado, COUNT(*) as total')
+            ->whereYear('created_at', $añoActual)
+            ->groupBy(DB::raw('EXTRACT(MONTH FROM created_at)'), 'estado')
+            ->get();
+
+        $datosActivosPorMes = [];
+        $datosPausaPorMes   = [];
+
+        for ($m = 1; $m <= $mesActualNumero; $m++) {
+            $activosMes = $estadosPorMes->where('mes', $m)->where('estado', 'activo')->first();
+            $pausaMes   = $estadosPorMes->where('mes', $m)->where('estado', 'inactivo')->first();
+
+            $datosActivosPorMes[] = $activosMes ? $activosMes->total : 0;
+            $datosPausaPorMes[]   = $pausaMes ? $pausaMes->total : 0;
+        }
+
+
         return view('reportes.index', compact(
             'usuariosServicio',
             'usuariosNuevos',
@@ -93,7 +112,9 @@ class ReporteController extends Controller
             'pctActivos',
             'pctPausa',
             'labelsMeses',
-            'datosNuevosPorMes'
+            'datosNuevosPorMes',
+            'datosActivosPorMes',
+            'datosPausaPorMes'
         ));
     }
 }
