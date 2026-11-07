@@ -58,22 +58,126 @@
                 </div>
             </div>
 
-            {{-- Área provisional para las gráficas --}}
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-base font-bold text-slate-900 mb-4">Problemas de salud más analizados</h3>
-                    <div class="h-64 flex items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-400 text-sm">
-                        [ Gráfico de Barras: Diagnósticos ]
+            {{-- Sección de Gráficas Conectadas (Dona y Línea) --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {{-- 1. Gráfica de Dona: Estado actual de los usuarios --}}
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <h3 class="text-base font-bold text-slate-900 mb-4">Estado actual de los usuarios</h3>
+
+                    <div class="relative flex items-center justify-center my-2">
+                        <div class="w-48 h-48">
+                            <canvas id="chartDona"></canvas>
+                        </div>
+                        {{-- Total en el centro de la dona --}}
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-xs text-slate-400 font-medium">Total</span>
+                            <span class="text-2xl font-extrabold text-slate-800">{{ $totalUsuarios }}</span>
+                            <span class="text-xs text-slate-400 font-medium">usuarios</span>
+                        </div>
+                    </div>
+
+                    {{-- Leyenda con porcentajes reales --}}
+                    <div class="flex justify-around items-center pt-4 border-t border-slate-100 text-xs font-medium text-slate-600">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block"></span>
+                            <span>Activos: <strong>{{ $usuariosServicio }}</strong> ({{ $pctActivos }}%)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-sm bg-amber-500 inline-block"></span>
+                            <span>En pausa: <strong>{{ $usuariosPausa }}</strong> ({{ $pctPausa }}%)</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-base font-bold text-slate-900 mb-4">Medicamentos con mayor seguimiento</h3>
-                    <div class="h-64 flex items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-400 text-sm">
-                        [ Gráfico de Barras: Medicamentos ]
+                {{-- 2. Gráfica de Línea: Usuarios nuevos por periodo --}}
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm lg:col-span-2">
+                    <h3 class="text-base font-bold text-slate-900 mb-4">Usuarios nuevos por periodo</h3>
+                    <div class="relative h-64">
+                        <canvas id="chartNuevos"></canvas>
                     </div>
                 </div>
+
             </div>
+
+            {{-- Scripts de Chart.js --}}
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    // 1. Gráfica de Dona
+                    const ctxDona = document.getElementById('chartDona').getContext('2d');
+                    new Chart(ctxDona, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Activos', 'En pausa'],
+                            datasets: [{
+                                data: [{{ $usuariosServicio }}, {{ $usuariosPausa }}],
+                                backgroundColor: ['#10B981', '#F59E0B'],
+                                borderWidth: 2,
+                                borderColor: '#ffffff',
+                                cutout: '70%'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return ` ${context.label}: ${context.raw} usuarios`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // 2. Gráfica de Línea
+                    const ctxNuevos = document.getElementById('chartNuevos').getContext('2d');
+                    new Chart(ctxNuevos, {
+                        type: 'line',
+                        data: {
+                            labels: {!! json_encode($labelsMeses) !!},
+                            datasets: [{
+                                label: 'Usuarios nuevos',
+                                data: {!! json_encode($datosNuevosPorMes) !!},
+                                borderColor: '#3B82F6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                pointBackgroundColor: '#3B82F6',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                borderWidth: 2.5,
+                                fill: true,
+                                tension: 0.35
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0,
+                                        color: '#64748B'
+                                    },
+                                    grid: { color: '#F1F5F9' }
+                                },
+                                x: {
+                                    ticks: { color: '#64748B' },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                });
+            </script>
 
         </main>
     </div>

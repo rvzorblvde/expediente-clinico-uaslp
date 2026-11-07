@@ -51,6 +51,49 @@ class ReporteController extends Controller
             $colorVariacion = 'text-emerald-600';
         }
 
-        return view('reportes.index', compact('usuariosServicio', 'usuariosNuevos', 'etiquetaPeriodo', 'inicioPeriodo', 'finPeriodo', 'usuariosPausa', 'variacion', 'colorVariacion'));
+        //GRAFICAS
+        //Grafica circular
+        $totalUsuarios = $usuariosServicio + $usuariosPausa;
+        $pctActivos = $totalUsuarios > 0 ? round(($usuariosServicio / $totalUsuarios) * 100, 1) : 0;
+        $pctPausa   = $totalUsuarios > 0 ? round(($usuariosPausa / $totalUsuarios) * 100, 1) : 0;
+
+        //Grafica lineal por año
+        $añoActual = Carbon::now()->year;
+
+        //Consulta a DB agrupando por mes
+        $altasPorMes = DB::table('expedientes')
+            ->selectRaw('EXTRACT(MONTH FROM created_at) as mes, COUNT(*) as total')
+            ->whereYear('created_at', $añoActual)
+            ->groupBy(DB::raw('EXTRACT(MONTH FROM created_at)'))
+            ->pluck('total', 'mes')
+            ->all();
+
+        //Meses
+        $mesesNombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        $mesActualNumero = Carbon::now()->month;
+
+        $labelsMeses = [];
+        $datosNuevosPorMes = [];
+
+        for ($m = 1; $m <= $mesActualNumero; $m++) {
+            $labelsMeses[] = $mesesNombres[$m - 1];
+            $datosNuevosPorMes[] = $altasPorMes[$m] ?? 0;
+        }
+
+        return view('reportes.index', compact(
+            'usuariosServicio',
+            'usuariosNuevos',
+            'etiquetaPeriodo',
+            'inicioPeriodo',
+            'finPeriodo',
+            'usuariosPausa',
+            'variacion',
+            'colorVariacion',
+            'totalUsuarios',
+            'pctActivos',
+            'pctPausa',
+            'labelsMeses',
+            'datosNuevosPorMes'
+        ));
     }
 }
