@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpedienteController;
+use App\Http\Controllers\VisitaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MedicamentoController;
 use App\Http\Controllers\ReporteController;
@@ -26,6 +27,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/expedientes/crear', [ExpedienteController::class, 'create'])->name('expedientes.create');
     Route::post('/expedientes', [ExpedienteController::class, 'store'])->name('expedientes.store');
 
+    //Visitas
+    Route::resource('visitas', VisitaController::class);
+
+    //Medicamentos
+
+    Route::get('/medicamentos', [MedicamentoController::class, 'index'])->name('medicamentos.index');
+    Route::get('/medicamentos/crear', [MedicamentoController::class, 'create'])->name('medicamentos.create');
+    Route::post('/medicamentos', [MedicamentoController::class, 'store'])->name('medicamentos.store');
+    Route::get('/medicamentos/{medicamento}/editar', [MedicamentoController::class, 'edit'])->name('medicamentos.edit');
+    Route::put('/medicamentos/{medicamento}', [MedicamentoController::class, 'update'])->name('medicamentos.update');
+    Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
+
+    //Estadísticas y reportes
+
+    Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+
+    // Farmacovigilancia
     Route::get('/farmacovigilancia', [FarmacovigilanciaController::class, 'index'])->name('farmacovigilancia.index');
     Route::get('/farmacovigilancia/crear', [FarmacovigilanciaController::class, 'create'])->name('farmacovigilancia.create');
     Route::post('/farmacovigilancia', [FarmacovigilanciaController::class, 'store'])->name('farmacovigilancia.store');
