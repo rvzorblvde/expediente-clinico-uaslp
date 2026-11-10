@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpedienteController;
+use App\Http\Controllers\VisitaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MedicamentoController;
 use App\Http\Controllers\ReporteController;
@@ -29,6 +30,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/expedientes/{expediente}', [ExpedienteController::class, 'update'])->name('expedientes.update');
     Route::delete('/expedientes/{expediente}', [ExpedienteController::class, 'destroy'])->name('expedientes.destroy');
     Route::patch('/expedientes/{expediente}/restaurar', [ExpedienteController::class, 'restore'])->name('expedientes.restore');
+
+    //Visitas
+    Route::resource('visitas', VisitaController::class);
 
     //Medicamentos
 
