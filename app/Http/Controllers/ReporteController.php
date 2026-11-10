@@ -111,6 +111,28 @@ class ReporteController extends Controller
         $problemasLabels = $problemasSalud->pluck('nombre')->toArray();
         $problemasData   = $problemasSalud->pluck('total')->toArray();
 
+        // Grafica de medicamentos analizados
+        $medicamentosAnalizados = DB::table('medicamentos')
+            ->leftJoin('farmacovigilancia', function ($join) {
+                $join->on(
+                    DB::raw('LOWER(TRIM(medicamentos."principioActivo"))'),
+                    '=',
+                    DB::raw('LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))')
+                );
+            })
+            ->select(
+                'medicamentos.principioActivo as nombre',
+                DB::raw('COUNT(farmacovigilancia.id) as total')
+            )
+            ->whereNotNull('medicamentos.principioActivo')
+            ->where('medicamentos.principioActivo', '!=', '')
+            ->groupBy('medicamentos.principioActivo')
+            ->orderByDesc('total')
+            ->limit(6)
+            ->get();
+
+        $medicamentosLabels = $medicamentosAnalizados->pluck('nombre')->toArray();
+        $medicamentosData   = $medicamentosAnalizados->pluck('total')->toArray();
 
         return view('reportes.index', compact(
             'usuariosServicio',
@@ -129,7 +151,9 @@ class ReporteController extends Controller
             'datosActivosPorMes',
             'datosPausaPorMes',
             'problemasLabels',
-            'problemasData'
+            'problemasData',
+            'medicamentosLabels',
+            'medicamentosData'
         ));
     }
 }

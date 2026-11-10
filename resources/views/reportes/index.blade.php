@@ -134,11 +134,11 @@
                     </div>
                 </div>
 
-                {{-- Espacio reservado para la siguiente gráfica: Medicamentos analizados --}}
+                {{-- Gráfica 5: Medicamentos analizados --}}
                 <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 class="text-base font-bold text-slate-900 mb-4">Medicamentos analizados</h3>
-                    <div class="h-64 flex items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-300 text-slate-400 text-sm">
-                        [ Próximamente: Medicamentos analizados ]
+                    <div class="relative h-64">
+                        <canvas id="chartMedicamentos"></canvas>
                     </div>
                 </div>
 
@@ -277,6 +277,40 @@
                             datasets: [{
                                 label: 'Número de casos',
                                 data: {!! json_encode($problemasData) !!},
+                                backgroundColor: '#60A5FA',
+                                borderRadius: 4,
+                                barPercentage: 0.65
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0, color: '#64748B' },
+                                    grid: { color: '#F1F5F9' }
+                                },
+                                y: {
+                                    ticks: { color: '#334155', font: { size: 12 } },
+                                    grid: { display: false }
+                                }
+                            }
+                        }
+                    });
+                    // 5. Gráfica de Barras Horizontales: Medicamentos analizados (Principio Activo)
+                    const ctxMedicamentos = document.getElementById('chartMedicamentos').getContext('2d');
+                    new Chart(ctxMedicamentos, {
+                        type: 'bar',
+                        data: {
+                            labels: {!! json_encode($medicamentosLabels) !!},
+                            datasets: [{
+                                label: 'Número de casos',
+                                data: {!! json_encode($medicamentosData) !!},
                                 backgroundColor: '#60A5FA',
                                 borderRadius: 4,
                                 barPercentage: 0.65
