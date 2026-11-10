@@ -21,9 +21,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Definir la regla (Gate) para gestionar usuarios (Solo Responsable Sanitario / idRol == 1)
+        // Gate para Administrador (Responsable Sanitario / idRol == 1)
         Gate::define('manage-users', function (User $user) {
             return $user->isResponsableSanitario();
+        });
+
+        // Gate para Trabajadores y Administradores (idRol 1 y 2)
+        Gate::define('manage-clinical-data', function (User $user) {
+            return $user->idRol == 1 || $user->idRol == 2;
         });
     }
 }

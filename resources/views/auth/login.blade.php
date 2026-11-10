@@ -40,7 +40,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="space-y-5">
+            <form method="POST" action="{{ route('login.post') }}" class="space-y-5">
                 @csrf
                 <div>
                     <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">Correo Electrónico</label>
