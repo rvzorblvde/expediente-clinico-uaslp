@@ -13,8 +13,10 @@ use App\Models\Alergia;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
+use App\Models\Auditoria;
 
 class ExpedienteController extends Controller
 {
@@ -116,6 +118,32 @@ class ExpedienteController extends Controller
         $paciente = $expediente->paciente;
         $data = $this->validar($request, $paciente);
 
+        // Cargamos las relaciones para capturar el estado original antes de borrar y recrear (para logs)
+        if ($paciente) {
+            $paciente->loadMissing(['telefonos', 'correos', 'contactos.telefonos', 'contactos.correos']);
+        }
+
+        $originalExpediente = $expediente->getAttributes();
+        $originalPaciente   = $paciente ? $paciente->getAttributes() : [];
+
+        $origTelefonos = $paciente ? $paciente->telefonos->map(fn ($t) => [
+            'numero' => trim((string) $t->numero),
+            'tipo'   => trim((string) ($t->tipo ?? '')),
+        ])->values()->all() : [];
+
+        $origCorreos = $paciente ? $paciente->correos->pluck('correo')->map(fn ($c) => trim((string) $c))->values()->all() : [];
+
+        $origContactos = $paciente ? $paciente->contactos->map(function ($c) {
+            return [
+                'nombres'    => trim((string) $c->nombres),
+                'apellido1'  => trim((string) $c->apellido1),
+                'apellido2'  => trim((string) ($c->apellido2 ?? '')),
+                'parentesco' => trim((string) $c->parentesco),
+                'telefonos'  => $c->telefonos->pluck('numero')->map(fn ($n) => trim((string) $n))->values()->all(),
+                'correos'    => $c->correos->pluck('correo')->map(fn ($e) => trim((string) $e))->values()->all(),
+            ];
+        })->values()->all() : [];
+
         DB::transaction(function () use ($paciente, $expediente, $data) {
             $paciente->update($this->datosPaciente($data));
 
@@ -133,6 +161,105 @@ class ExpedienteController extends Controller
 
             $expediente->touch();
         });
+
+        // Generamos un array de cambios para logs
+
+        $cambios = [];
+
+        // 1. Cambios directos del expediente
+        foreach ($expediente->getChanges() as $campo => $valorNuevo) {
+            if ($campo === 'updated_at') continue;
+            $cambios[$campo] = [
+                'anterior' => $originalExpediente[$campo] ?? null,
+                'nuevo'    => $valorNuevo
+            ];
+        }
+
+        // 2. Cambios de datos personales del paciente (nombre, curp, fecha, etc.)
+        if ($paciente) {
+            $datosNuevosPaciente = $this->datosPaciente($data);
+            foreach ($datosNuevosPaciente as $campo => $valorNuevo) {
+                if (array_key_exists($campo, $originalPaciente)) {
+                    $valorAnterior = $originalPaciente[$campo];
+
+                    $valAntCmp = is_string($valorAnterior) ? trim(substr($valorAnterior, 0, 10)) : $valorAnterior;
+                    $valNueCmp = is_string($valorNuevo) ? trim(substr($valorNuevo, 0, 10)) : $valorNuevo;
+
+                    if ($valAntCmp != $valNueCmp) {
+                        $cambios[$campo] = [
+                            'anterior' => $valorAnterior,
+                            'nuevo'    => $valorNuevo
+                        ];
+                    }
+                }
+            }
+
+            // 3. Cambios en teléfonos
+            $nuevosTelefonos = collect($data['telefonos'] ?? [])->map(fn ($t) => [
+                'numero' => trim((string) ($t['numero'] ?? '')),
+                'tipo'   => trim((string) ($t['tipo'] ?? '')),
+            ])->values()->all();
+
+            if ($origTelefonos != $nuevosTelefonos) {
+                $cambios['telefonos'] = [
+                    'anterior' => $origTelefonos,
+                    'nuevo'    => $nuevosTelefonos
+                ];
+            }
+
+            // 4. Cambios en correos
+            $nuevosCorreos = collect($data['correos'] ?? [])->map(fn ($c) => trim((string) $c))->values()->all();
+
+            if ($origCorreos != $nuevosCorreos) {
+                $cambios['correos'] = [
+                    'anterior' => $origCorreos,
+                    'nuevo'    => $nuevosCorreos
+                ];
+            }
+
+            // 5. Cambios en contactos de emergencia
+            $nuevosContactos = collect($data['contactos'] ?? [])->map(function ($c) {
+                return [
+                    'nombres'    => trim((string) ($c['nombres'] ?? '')),
+                    'apellido1'  => trim((string) ($c['apellido1'] ?? '')),
+                    'apellido2'  => trim((string) ($c['apellido2'] ?? '')),
+                    'parentesco' => trim((string) ($c['parentesco'] ?? '')),
+                    'telefonos'  => collect($c['telefonos'] ?? [])->map(fn ($n) => trim((string) $n))->values()->all(),
+                    'correos'    => collect($c['correos'] ?? [])->map(fn ($e) => trim((string) $e))->values()->all(),
+                ];
+            })->values()->all();
+
+            if ($origContactos != $nuevosContactos) {
+                $cambios['contactos'] = [
+                    'anterior' => $origContactos,
+                    'nuevo'    => $nuevosContactos
+                ];
+            }
+        }
+
+        if (!empty($cambios)) {
+            $accionTexto = 'Actualización de expediente';
+            if (isset($cambios['estado'])) {
+                $estadoNuevo = strtolower($cambios['estado']['nuevo']);
+                if (in_array($estadoNuevo, ['inactivo', 'baja', 'suspendido'])) {
+                    $accionTexto = 'Desactivación de expediente';
+                } elseif ($estadoNuevo === 'activo') {
+                    $accionTexto = 'Activación de expediente';
+                }
+            }
+
+            Auditoria::create([
+                'idUsuario'     => Auth::id() ?? 1,
+                'accion'        => $accionTexto,
+                'tablaAfectada' => 'expedientes',
+                'detalles'      => [
+                    'tipo'      => 'modificacion',
+                    'paciente'  => $paciente ? $paciente->nombres . ' ' . $paciente->apellido1 . ' ' . ($paciente->apellido2 ?? '') : 'No asignado',
+                    'cambios'   => $cambios
+                ],
+                'fechaAccion'   => now(),
+            ]);
+        }
 
         return redirect()->route('expedientes.index')
             ->with('success', "Expediente {$expediente->folioExpediente} actualizado.");
@@ -321,6 +448,20 @@ class ExpedienteController extends Controller
             'alergias',
             'visitas.datosAntropometricos', // Para ver el historial de triage/signos vitales
             'creador'
+        ]);
+
+        $paciente = $expediente->paciente;
+
+        Auditoria::create([
+            'idUsuario'     => auth()->id() ?? 1,
+            'accion'        => 'Consulta de expediente',
+            'tablaAfectada' => 'expedientes',
+            'detalles'      => [
+                'tipo'     => 'consulta',
+                'folio'    => $expediente->folioExpediente,
+                'paciente' => $paciente ? trim("{$paciente->nombres} {$paciente->apellido1} " . ($paciente->apellido2 ?? '')) : 'No asignado',
+            ],
+            'fechaAccion'   => now(),
         ]);
 
         return view('expedientes.show', compact('expediente'));
