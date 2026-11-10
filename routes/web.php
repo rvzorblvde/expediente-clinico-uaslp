@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\MedicamentoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\FarmacovigilanciaController;
+use App\Http\Controllers\AuditoriaController;
 
 // Public Routes (Authentication)
 // Rutas públicas de autenticación
@@ -60,9 +61,10 @@ Route::middleware(['auth'])->group(function () {
 
 
     // PERMISO: SOLO ADMIN (Responsable Sanitario)
-    Route::middleware(['can:manage-users'])->group(function () {
+    Route::middleware(['can:is-admin'])->group(function () {
         Route::resource('/usuarios', UserController::class)->except('show');
         Route::put('/usuarios/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::get('/auditorias', [AuditoriaController::class, 'index'])->name('auditorias.index');
     });
 
 
