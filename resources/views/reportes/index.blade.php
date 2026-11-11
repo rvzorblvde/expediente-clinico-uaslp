@@ -11,32 +11,65 @@
             <x-breadcrumbs />
 
             {{-- Encabezado --}}
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-900">Estadísticas y reportes</h2>
                     <p class="text-slate-600 mt-1">Consulta métricas, indicadores clínicos y reportes del sistema.</p>
                 </div>
 
-                {{-- Botones de acción / exportación --}}
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="exportarExcelConGraficas()"
-                            class="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
-                        Exportar Excel
-                    </button>
-                    <button type="button" onclick="generarPdfConGraficas('oficial')"
-                            class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                        PDF Oficial
-                    </button>
-                    <button type="button" onclick="generarPdfConGraficas('practica')"
-                            class="inline-flex items-center justify-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shadow-sm">
-                        PDF Prácticas
-                    </button>
+                <div class="flex flex-wrap items-center gap-3">
+                    {{-- Filtro por Mes y Año --}}
+                    @php
+                        $ahora = now('America/Mexico_City');
+                        $anioSeleccionado = (int) request('anio', $ahora->year);
+                        $mesMax = ($anioSeleccionado >= $ahora->year) ? $ahora->month : 12;
+                    @endphp
+
+                    <form method="GET" action="{{ route('reportes.index') }}" class="flex items-center gap-2">
+                        <select name="mes" class="rounded-lg border-slate-300 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            @foreach(range(1, $mesMax) as $m)
+                                <option value="{{ $m }}" {{ (request('mes', $ahora->month) == $m) ? 'selected' : '' }}>
+                                    {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->translatedFormat('F')) }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <select name="anio" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            @foreach(range($ahora->year - 2, $ahora->year) as $y)
+                                <option value="{{ $y }}" {{ (request('anio', $ahora->year) == $y) ? 'selected' : '' }}>
+                                    {{ $y }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        <button type="submit"
+                                class="px-3 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-colors shadow-sm">
+                            Filtrar
+                        </button>
+                    </form>
+
+                    {{-- Botones de acción / exportación --}}
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="exportarExcelConGraficas()"
+                                class="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                            Exportar Excel
+                        </button>
+                        <button type="button" onclick="generarPdfConGraficas('oficial')"
+                                class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                            PDF Oficial
+                        </button>
+                        <button type="button" onclick="generarPdfConGraficas('practica')"
+                                class="inline-flex items-center justify-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shadow-sm">
+                            PDF Prácticas
+                        </button>
+                    </div>
                 </div>
 
-                {{-- Formulario oculto para enviar las gráficas al PDF --}}
+                {{-- Formulario oculto para enviar las gráficas y el periodo al PDF/Excel --}}
                 <form id="formPdf" method="POST" action="{{ route('reportes.pdf') }}" target="_blank" class="hidden">
                     @csrf
                     <input type="hidden" name="formato" id="pdf_formato">
+                    <input type="hidden" name="mes" value="{{ request('mes', now('America/Mexico_City')->month) }}">
+                    <input type="hidden" name="anio" value="{{ request('anio', now('America/Mexico_City')->year) }}">
                     <input type="hidden" name="img_dona" id="pdf_img_dona">
                     <input type="hidden" name="img_nuevos" id="pdf_img_nuevos">
                     <input type="hidden" name="img_variacion" id="pdf_img_variacion">
@@ -44,7 +77,6 @@
                     <input type="hidden" name="img_medicamentos" id="pdf_img_medicamentos">
                 </form>
             </div>
-
 
             {{-- Tarjetas de Métricas Clave (KPIs) --}}
 
@@ -140,6 +172,7 @@
 
                 </div>
             </div>
+
             {{-- Sección: Problemas de salud analizados y Medicamentos --}}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
 

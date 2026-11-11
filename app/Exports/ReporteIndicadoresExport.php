@@ -30,6 +30,20 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
     protected int $filaInicioMedicamentos = 27;
     protected int $filaFinMedicamentos = 27;
 
+    protected int $mes;
+    protected int $anio;
+
+    public function __construct(?int $mes = null, ?int $anio = null)
+    {
+        $ahora = Carbon::now('America/Mexico_City');
+        $this->anio = min($anio ?? $ahora->year, $ahora->year);
+        $this->mes  = $mes ?? $ahora->month;
+
+        if ($this->anio === $ahora->year && $this->mes > $ahora->month) {
+            $this->mes = $ahora->month;
+        }
+    }
+
     public function title(): string
     {
         return 'Indicadores Unifarmacia';
@@ -37,8 +51,12 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
 
     public function array(): array
     {
-        $periodo = Carbon::now()->locale('es')->isoFormat('MMMM YYYY');
-        $fechaGeneracion = date('d/m/Y H:i');
+        $fechaReferencia = Carbon::createFromDate($this->anio, $this->mes, 1, 'America/Mexico_City');
+        $inicioPeriodo   = $fechaReferencia->copy()->startOfMonth();
+        $finPeriodo      = $fechaReferencia->copy()->endOfMonth();
+
+        $periodo         = $fechaReferencia->copy()->locale('es')->isoFormat('MMMM YYYY');
+        $fechaGeneracion = Carbon::now('America/Mexico_City')->format('d/m/Y H:i');
 
         $filas = [
             // Filas 1 a 4: Membrete institucional (NOM-004)
@@ -52,8 +70,15 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
         ];
 
         // 1. Resumen de Usuarios (Filas 7 y 8)
-        $usuariosServicio = DB::table('expedientes')->where('estado', 'activo')->count();
-        $usuariosPausa    = DB::table('expedientes')->where('estado', 'inactivo')->count();
+        $usuariosServicio = DB::table('expedientes')
+            ->where('estado', 'activo')
+            ->where('created_at', '<=', $finPeriodo)
+            ->count();
+
+        $usuariosPausa = DB::table('expedientes')
+            ->where('estado', 'inactivo')
+            ->where('created_at', '<=', $finPeriodo)
+            ->count();
 
         $filas[] = ['Activos', $usuariosServicio, '', ''];
         $filas[] = ['En pausa', $usuariosPausa, '', ''];
@@ -65,13 +90,13 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
         $filas[] = ['Mes', 'Nuevos', 'Activos', 'En pausa'];
         $this->filaInicioMeses = count($filas) + 1; // 11
 
-        $mesActual = Carbon::now()->month;
-        $anioActual = Carbon::now()->year;
+        $mesActual    = $this->mes;
+        $anioActual   = $this->anio;
         $nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
         for ($m = 1; $m <= $mesActual; $m++) {
-            $inicioMes = Carbon::create($anioActual, $m, 1)->startOfMonth();
-            $finMes    = Carbon::create($anioActual, $m, 1)->endOfMonth();
+            $inicioMes = Carbon::createFromDate($anioActual, $m, 1, 'America/Mexico_City')->startOfMonth();
+            $finMes    = Carbon::createFromDate($anioActual, $m, 1, 'America/Mexico_City')->endOfMonth();
 
             $nuevos  = DB::table('expedientes')->whereBetween('created_at', [$inicioMes, $finMes])->count();
             $activos = DB::table('expedientes')->where('estado', 'activo')->where('created_at', '<=', $finMes)->count();
@@ -88,10 +113,12 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
         $this->filaInicioProblemas = count($filas) + 1;
 
         $problemasSalud = DB::table('antecedentes')
-            ->select('nombre', DB::raw('COUNT(*) as total'))
-            ->whereNotNull('nombre')
-            ->where('nombre', '!=', '')
-            ->groupBy('nombre')
+            ->join('expedientes', 'antecedentes.folioExpediente', '=', 'expedientes.folioExpediente')
+            ->select('antecedentes.nombre', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('antecedentes.nombre')
+            ->where('antecedentes.nombre', '!=', '')
+            ->whereBetween('expedientes.created_at', [$inicioPeriodo, $finPeriodo])
+            ->groupBy('antecedentes.nombre')
             ->orderByDesc('total')
             ->limit(6)
             ->get();
@@ -112,12 +139,13 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
         $this->filaInicioMedicamentos = count($filas) + 1;
 
         $medicamentos = DB::table('medicamentos')
-            ->leftJoin('farmacovigilancia', function ($join) {
+            ->leftJoin('farmacovigilancia', function ($join) use ($inicioPeriodo, $finPeriodo) {
                 $join->on(
                     DB::raw('LOWER(TRIM(medicamentos."principioActivo"))'),
                     '=',
                     DB::raw('LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))')
-                );
+                )
+                    ->whereBetween('farmacovigilancia.created_at', [$inicioPeriodo, $finPeriodo]);
             })
             ->select('medicamentos.principioActivo as nombre', DB::raw('COUNT(farmacovigilancia.id) as total'))
             ->whereNotNull('medicamentos.principioActivo')
