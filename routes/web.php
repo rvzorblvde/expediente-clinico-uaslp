@@ -39,8 +39,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/medicamentos/{medicamento}', [MedicamentoController::class, 'update'])->name('medicamentos.update');
     Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
 
-    //Estadísticas y reportes
+// Estadísticas y reportes
     Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');
+    Route::match(['get', 'post'], '/reportes/pdf', [ReporteController::class, 'exportarPdf'])->name('reportes.pdf');
+    Route::match(['get', 'post'], '/reportes/excel', [ReporteController::class, 'exportarExcel'])->name('reportes.excel');
 
     // Farmacovigilancia
     Route::get('/farmacovigilancia', [FarmacovigilanciaController::class, 'index'])->name('farmacovigilancia.index');
@@ -51,7 +53,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'update'])->name('farmacovigilancia.update');
     Route::delete('/farmacovigilancia/{farmacovigilancia}', [FarmacovigilanciaController::class, 'destroy'])->name('farmacovigilancia.destroy');
 
-    
+
 
     // User administration (Health Officer Only)
     Route::middleware(['can:manage-users'])->group(function () {

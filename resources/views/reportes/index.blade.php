@@ -19,13 +19,30 @@
 
                 {{-- Botones de acción / exportación --}}
                 <div class="flex items-center gap-2">
-                    <button type="button" class="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                    <button type="button" onclick="exportarExcelConGraficas()"
+                            class="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
                         Exportar Excel
                     </button>
-                    <button type="button" class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                        Generar PDF
+                    <button type="button" onclick="generarPdfConGraficas('oficial')"
+                            class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                        PDF Oficial
+                    </button>
+                    <button type="button" onclick="generarPdfConGraficas('practica')"
+                            class="inline-flex items-center justify-center px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shadow-sm">
+                        PDF Prácticas
                     </button>
                 </div>
+
+                {{-- Formulario oculto para enviar las gráficas al PDF --}}
+                <form id="formPdf" method="POST" action="{{ route('reportes.pdf') }}" target="_blank" class="hidden">
+                    @csrf
+                    <input type="hidden" name="formato" id="pdf_formato">
+                    <input type="hidden" name="img_dona" id="pdf_img_dona">
+                    <input type="hidden" name="img_nuevos" id="pdf_img_nuevos">
+                    <input type="hidden" name="img_variacion" id="pdf_img_variacion">
+                    <input type="hidden" name="img_problemas" id="pdf_img_problemas">
+                    <input type="hidden" name="img_medicamentos" id="pdf_img_medicamentos">
+                </form>
             </div>
 
 
@@ -338,7 +355,36 @@
                     });
                 });
             </script>
+            <script>
+                function generarPdfConGraficas(formato) {
+                    document.getElementById('pdf_formato').value = formato;
+                    document.getElementById('pdf_img_dona').value = document.getElementById('chartDona').toDataURL('image/png');
+                    document.getElementById('pdf_img_nuevos').value = document.getElementById('chartNuevos').toDataURL('image/png');
+                    document.getElementById('pdf_img_variacion').value = document.getElementById('chartVariacionUsuarios').toDataURL('image/png');
+                    document.getElementById('pdf_img_problemas').value = document.getElementById('chartProblemasSalud').toDataURL('image/png');
+                    document.getElementById('pdf_img_medicamentos').value = document.getElementById('chartMedicamentos').toDataURL('image/png');
+                    document.getElementById('formPdf').submit();
+                }
 
+                function exportarExcelConGraficas() {
+                    const form = document.getElementById('formPdf');
+                    const actionOriginal = form.action;
+                    const targetOriginal = form.target;
+
+                    document.getElementById('pdf_img_dona').value = document.getElementById('chartDona').toDataURL('image/png');
+                    document.getElementById('pdf_img_nuevos').value = document.getElementById('chartNuevos').toDataURL('image/png');
+                    document.getElementById('pdf_img_variacion').value = document.getElementById('chartVariacionUsuarios').toDataURL('image/png');
+                    document.getElementById('pdf_img_problemas').value = document.getElementById('chartProblemasSalud').toDataURL('image/png');
+                    document.getElementById('pdf_img_medicamentos').value = document.getElementById('chartMedicamentos').toDataURL('image/png');
+
+                    form.action = "{{ route('reportes.excel') }}";
+                    form.target = "_self";
+                    form.submit();
+
+                    form.action = actionOriginal;
+                    form.target = targetOriginal;
+                }
+            </script>
         </main>
     </div>
 @endsection
