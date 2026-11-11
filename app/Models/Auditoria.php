@@ -25,4 +25,9 @@ class Auditoria extends Model
             'detalles' => 'array',
         ];
     }
+
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'idUsuario', 'idUsuario');
+    }
 }

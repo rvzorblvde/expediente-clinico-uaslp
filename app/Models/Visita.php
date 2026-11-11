@@ -2,19 +2,35 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Visita extends Model
 {
+    use HasFactory;
+
     protected $table = 'visitas';
     protected $primaryKey = 'idVisita';
-    public $timestamps = false;
+    
+    public $timestamps = false; 
 
-    protected $fillable = ['folioExpediente', 'idUsuario', 'fecha', 'motivo', 'estado'];
+    protected $fillable = [
+        'folioExpediente',
+        'idUsuario',
+        'fecha',
+        'motivo',
+        'estado',
+    ];
 
-    // Relación 1 a 1 con Datos Antropométricos (Triage / Signos vitales)
-    public function datosAntropometricos()
+    // Relación opcional con Expediente
+    public function expediente()
     {
-        return $this->hasOne(DatosAntropometricos::class, 'idVisita', 'idVisita');
+        return $this->belongsTo(Expediente::class, 'folioExpediente', 'folioExpediente');
+    }
+
+    // Relación con el usuario que atendió/registró
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'idUsuario', 'idUsuario');
     }
 }

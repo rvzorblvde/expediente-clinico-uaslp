@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Farmacovigilancia;
 use App\Models\MedicamentoConcomitante;
+use App\Models\Auditoria;
 use Illuminate\Http\Request;
 
 class FarmacovigilanciaController extends Controller
@@ -115,7 +116,23 @@ class FarmacovigilanciaController extends Controller
     public function show($id)
     {
         $reporte = Farmacovigilancia::with(['reacciones', 'medicamentosConcomitantes'])->findOrFail($id);
-        
+
+        // Registro de auditoría
+        $paciente = $reporte->paciente ?? null;
+        $nombrePaciente = $paciente ? trim("{$paciente->nombres} {$paciente->apellido1} " . ($paciente->apellido2 ?? '')) : 'No especificado';
+
+        \App\Models\Auditoria::create([
+            'idUsuario' => auth()->id() ?? 1,
+            'accion' => 'Consulta de reporte de farmacovigilancia',
+            'tablaAfectada' => 'farmacovigilancia',
+            'detalles' => [
+                'tipo' => 'consulta',
+                'idReporte' => $reporte->idFarmacovigilancia ?? $reporte->id,
+                'paciente' => $nombrePaciente,
+            ],
+            'fechaAccion' => now(),
+        ]);
+
         return view('farmacovigilancia.show', compact('reporte'));
     }
 
