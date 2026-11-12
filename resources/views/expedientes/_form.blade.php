@@ -5,6 +5,7 @@
     $select = 'w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
     $label  = 'block text-sm font-medium text-slate-700 mb-1';
     $tipos  = config('expediente.tipos_telefono');
+    $tratamientos = old('tratamientos', []);
 
     $telefonos = old('telefonos', $p
         ? $p->telefonos->map(fn ($t) => ['numero' => $t->numero, 'tipo' => $t->tipo])->all()
@@ -386,6 +387,82 @@
     @error('noFarmacologicos.*.titulo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 </section>
 
+{{-- ========== Tratamientos farmacológicos ========== --}}
+<section id="sec-tratamientos" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+        <h3 class="text-lg font-semibold text-slate-900">Tratamientos farmacológicos</h3>
+        <button type="button" id="btn-modal-medicamento"
+                class="px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
+            + Nuevo medicamento (alta rápida)
+        </button>
+    </div>
+    <p class="text-sm text-slate-500 mb-4">Medicamentos que el paciente toma actualmente, con dosis, intervalo, vía y fechas (RF-01). Si el medicamento no está en el catálogo, usa el alta rápida.</p>
+
+    <div id="lista-tratamientos" class="space-y-3">
+        @foreach ($tratamientos as $i => $tr)
+            <div class="fila p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+                <div class="flex items-center gap-2">
+                    <select name="tratamientos[{{ $i }}][idMedicamento]" class="trat-medicamento {{ $input }} bg-white flex-1" required>
+                        <option value="">Selecciona un medicamento...</option>
+                        @foreach ($medicamentos as $m)
+                            <option value="{{ $m->idMedicamento }}" {{ ($tr['idMedicamento'] ?? '') == $m->idMedicamento ? 'selected' : '' }}>
+                                {{ $m->nombre }}{{ $m->concentracion ? " {$m->concentracion}" : '' }}{{ $m->presentacion ? " · {$m->presentacion}" : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <button type="button" data-remove=".fila" class="px-2 text-sm text-red-600 hover:text-red-800 shrink-0">Quitar</button>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
+                    <div>
+                        <label class="text-xs text-slate-500">Dosis</label>
+                        <input type="number" name="tratamientos[{{ $i }}][dosisValor]" value="{{ $tr['dosisValor'] ?? '' }}"
+                               min="0.0001" step="0.0001" placeholder="Ej. 500" class="{{ $input }}">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500">Unidad</label>
+                        <select name="tratamientos[{{ $i }}][dosisUnidad]" class="{{ $input }} bg-white">
+                            <option value="">—</option>
+                            @foreach (config('medicamentos.unidades_concentracion') as $u)
+                                <option value="{{ $u }}" {{ ($tr['dosisUnidad'] ?? '') === $u ? 'selected' : '' }}>{{ $u }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500">Vía</label>
+                        <select name="tratamientos[{{ $i }}][viaAdministracion]" class="{{ $input }} bg-white">
+                            <option value="">—</option>
+                            @foreach (config('medicamentos.vias_administracion') as $via)
+                                <option value="{{ $via }}" {{ ($tr['viaAdministracion'] ?? '') === $via ? 'selected' : '' }}>{{ $via }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500">Intervalo / frecuencia</label>
+                        <input type="text" name="tratamientos[{{ $i }}][frecuencia]" value="{{ $tr['frecuencia'] ?? '' }}"
+                               maxlength="100" placeholder="Ej. Cada 8 horas" class="{{ $input }}">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500">Inicio *</label>
+                        <input type="text" name="tratamientos[{{ $i }}][fechaInicio]" value="{{ $tr['fechaInicio'] ?? '' }}"
+                               placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" class="campo-fecha {{ $input }}">
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500">Fin</label>
+                        <input type="text" name="tratamientos[{{ $i }}][fechaFin]" value="{{ $tr['fechaFin'] ?? '' }}"
+                               placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" class="campo-fecha {{ $input }}">
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+    <button type="button" data-add="tpl-tratamiento" data-target="#lista-tratamientos"
+            class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800">+ Agregar tratamiento</button>
+    @error('tratamientos.*.idMedicamento') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('tratamientos.*.dosisValor') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('tratamientos.*.fechaInicio') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('tratamientos.*.fechaFin') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+</section>
+
 {{-- ========== Antecedentes Ginecoobstétricos (siempre visible; activable para casos especiales) ========== --}}
 @php
     $gineco = old('gineco', []);
@@ -603,6 +680,58 @@
     </div>
 </template>
 
+<template id="tpl-tratamiento">
+    <div class="fila p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+        <div class="flex items-center gap-2">
+            <select name="tratamientos[__I__][idMedicamento]" class="trat-medicamento {{ $input }} bg-white flex-1" required>
+                <option value="">Selecciona un medicamento...</option>
+                @foreach ($medicamentos as $m)
+                    <option value="{{ $m->idMedicamento }}">
+                        {{ $m->nombre }}{{ $m->concentracion ? " {$m->concentracion}" : '' }}{{ $m->presentacion ? " · {$m->presentacion}" : '' }}
+                    </option>
+                @endforeach
+            </select>
+            <button type="button" data-remove=".fila" class="px-2 text-sm text-red-600 hover:text-red-800 shrink-0">Quitar</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
+            <div>
+                <label class="text-xs text-slate-500">Dosis</label>
+                <input type="number" name="tratamientos[__I__][dosisValor]" min="0.0001" step="0.0001" placeholder="Ej. 500" class="{{ $input }}">
+            </div>
+            <div>
+                <label class="text-xs text-slate-500">Unidad</label>
+                <select name="tratamientos[__I__][dosisUnidad]" class="{{ $input }} bg-white">
+                    <option value="">—</option>
+                    @foreach (config('medicamentos.unidades_concentracion') as $u)
+                        <option value="{{ $u }}">{{ $u }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="text-xs text-slate-500">Vía</label>
+                <select name="tratamientos[__I__][viaAdministracion]" class="{{ $input }} bg-white">
+                    <option value="">—</option>
+                    @foreach (config('medicamentos.vias_administracion') as $via)
+                        <option value="{{ $via }}">{{ $via }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="text-xs text-slate-500">Intervalo / frecuencia</label>
+                <input type="text" name="tratamientos[__I__][frecuencia]" maxlength="100" placeholder="Ej. Cada 8 horas" class="{{ $input }}">
+            </div>
+            <div>
+                <label class="text-xs text-slate-500">Inicio *</label>
+                <input type="text" name="tratamientos[__I__][fechaInicio]" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" class="campo-fecha {{ $input }}">
+            </div>
+            <div>
+                <label class="text-xs text-slate-500">Fin</label>
+                <input type="text" name="tratamientos[__I__][fechaFin]" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" class="campo-fecha {{ $input }}">
+            </div>
+        </div>
+    </div>
+</template>
+
 <template id="tpl-nofarma">
     <div class="fila grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border-l-2 border-emerald-400 pl-3 py-2">
         <div class="sm:col-span-3">
@@ -624,6 +753,85 @@
         </div>
     </div>
 </template>
+
+{{-- ========== Modal: alta rápida de medicamento ========== --}}
+<dialog id="modal-medicamento" class="m-auto w-full max-w-xl rounded-xl p-0 shadow-xl">
+    <div class="p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-1">Nuevo medicamento</h3>
+        <p class="text-sm text-slate-500 mb-4">Se agrega al catálogo general y queda disponible en la lista de tratamientos.</p>
+
+        <div id="mm-errores" class="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm" hidden></div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="{{ $label }}">Tipo *</label>
+                <select id="mm-tipo" class="{{ $input }} bg-white">
+                    <option value="comercial">Comercial (marca)</option>
+                    <option value="generico">Genérico</option>
+                </select>
+            </div>
+            <div>
+                <label class="{{ $label }}">Nombre *</label>
+                <input type="text" id="mm-nombre" maxlength="150" placeholder="Ej. Tempra" class="{{ $input }}">
+            </div>
+            <div>
+                <label class="{{ $label }}">Principio activo *</label>
+                <input type="text" id="mm-principio" maxlength="150" placeholder="Ej. Paracetamol" class="{{ $input }}">
+            </div>
+            <div>
+                <label class="{{ $label }}">Laboratorio</label>
+                <input type="text" id="mm-laboratorio" maxlength="100" class="{{ $input }}">
+            </div>
+            <div>
+                <label class="{{ $label }}">Forma farmacéutica</label>
+                <select id="mm-forma" class="{{ $input }} bg-white">
+                    <option value="">Sin especificar</option>
+                    @foreach (config('medicamentos.formas') as $f)
+                        <option value="{{ $f }}">{{ $f }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="{{ $label }}">Concentración</label>
+                    <input type="number" id="mm-concvalor" min="0.0001" step="0.0001" placeholder="Ej. 500" class="{{ $input }}">
+                </div>
+                <div>
+                    <label class="{{ $label }}">Unidad</label>
+                    <select id="mm-concunidad" class="{{ $input }} bg-white">
+                        <option value="">—</option>
+                        @foreach (config('medicamentos.unidades_concentracion') as $u)
+                            <option value="{{ $u }}">{{ $u }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="{{ $label }}">¿Requiere receta? *</label>
+                <select id="mm-receta" class="{{ $input }} bg-white">
+                    <option value="0">No</option>
+                    <option value="1">Sí</option>
+                </select>
+            </div>
+            <div>
+                <label class="{{ $label }}">¿Es controlado? *</label>
+                <select id="mm-controlado" class="{{ $input }} bg-white">
+                    <option value="0">No</option>
+                    <option value="1">Sí</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button" id="mm-cancelar"
+                    class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200">Cancelar</button>
+            <button type="button" id="mm-guardar"
+                    class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50">
+                Guardar medicamento
+            </button>
+        </div>
+    </div>
+</dialog>
 
 <script>
     (function () {
@@ -799,4 +1007,85 @@
         inputPeso.addEventListener('input', calcularIMC);
         inputTalla.addEventListener('input', calcularIMC);
     })();
+
+    // ===== Alta rápida de medicamento (modal) =====
+    const modal = document.getElementById('modal-medicamento');
+    const mmErrores = document.getElementById('mm-errores');
+    const mmGuardar = document.getElementById('mm-guardar');
+    const mm = (id) => document.getElementById(id);
+
+    document.getElementById('btn-modal-medicamento').addEventListener('click', function () {
+        mmErrores.hidden = true;
+        modal.showModal();
+    });
+    document.getElementById('mm-cancelar').addEventListener('click', function () { modal.close(); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) modal.close(); });
+
+    // Controlado siempre requiere receta
+    mm('mm-controlado').addEventListener('change', function () {
+        if (this.value === '1') mm('mm-receta').value = '1';
+    });
+
+    mmGuardar.addEventListener('click', async function () {
+        mmGuardar.disabled = true;
+        mmErrores.hidden = true;
+
+        const datos = new FormData();
+        datos.append('tipo', mm('mm-tipo').value);
+        datos.append('nombre', mm('mm-nombre').value);
+        datos.append('principioActivo', mm('mm-principio').value);
+        datos.append('laboratorio', mm('mm-laboratorio').value);
+        datos.append('formaFarmaceutica', mm('mm-forma').value);
+        datos.append('concentracionValor', mm('mm-concvalor').value);
+        datos.append('concentracionUnidad', mm('mm-concunidad').value);
+        datos.append('requiereReceta', mm('mm-receta').value);
+        datos.append('esControlado', mm('mm-controlado').value);
+
+        try {
+            const resp = await fetch('{{ route('medicamentos.store') }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                },
+                body: datos,
+            });
+            const json = await resp.json();
+
+            if (!resp.ok) {
+                const lista = Object.values(json.errors || {}).flat();
+                mmErrores.innerHTML = '<ul class="list-disc list-inside">' +
+                    lista.map((e) => '<li>' + e + '</li>').join('') + '</ul>';
+                mmErrores.hidden = false;
+                return;
+            }
+
+            // Agregar la opción nueva a todos los selects de tratamiento y a la plantilla
+            const opcion = new Option(json.texto, json.idMedicamento);
+            document.querySelectorAll('select.trat-medicamento').forEach(function (sel) {
+                sel.add(opcion.cloneNode(true));
+            });
+            const tplSel = document.getElementById('tpl-tratamiento').content.querySelector('select.trat-medicamento');
+            tplSel.add(opcion.cloneNode(true));
+
+            // Seleccionarlo en la última fila (o crear una si no hay)
+            let filas = document.querySelectorAll('#lista-tratamientos select.trat-medicamento');
+            if (filas.length === 0) {
+                document.querySelector('[data-add="tpl-tratamiento"]').click();
+                filas = document.querySelectorAll('#lista-tratamientos select.trat-medicamento');
+            }
+            filas[filas.length - 1].value = json.idMedicamento;
+
+            // Limpiar y cerrar
+            ['mm-nombre', 'mm-principio', 'mm-laboratorio', 'mm-concvalor'].forEach((id) => mm(id).value = '');
+            mm('mm-forma').value = ''; mm('mm-concunidad').value = '';
+            mm('mm-receta').value = '0'; mm('mm-controlado').value = '0'; mm('mm-tipo').value = 'comercial';
+            modal.close();
+        } catch (err) {
+            mmErrores.textContent = 'No se pudo guardar el medicamento. Intenta de nuevo.';
+            mmErrores.hidden = false;
+        } finally {
+            mmGuardar.disabled = false;
+        }
+    });
 </script>

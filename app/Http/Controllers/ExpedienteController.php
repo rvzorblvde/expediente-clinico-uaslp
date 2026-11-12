@@ -5,16 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Expediente;
 use App\Models\Paciente;
 use App\Models\Visita;
+use App\Models\Medicamento;
+use App\Models\Tratamiento;
 use App\Models\DatosAntropometricos;
 use App\Models\Habito;
 use App\Models\AntecedenteGinecoObstetrico;
 use App\Models\Antecedente;
 use App\Models\Alergia;
 use Carbon\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Models\Auditoria;
 use App\Http\Requests\ExpedienteRequest;
@@ -73,45 +75,52 @@ class ExpedienteController extends Controller
 
     public function create()
     {
-        return view('expedientes.create');
+        return view('expedientes.create', $this->catalogosFormulario());
+    }
+
+    private function catalogosFormulario(): array
+    {
+        return [
+            'medicamentos' => Medicamento::orderBy('nombre')
+                ->get(['idMedicamento', 'nombre', 'concentracion', 'presentacion']),
+        ];
     }
 
     public function store(ExpedienteRequest $request)
     {
         $data = $request->validated();
 
-        $expediente = DB::transaction(function () use ($data) {
-            // 1. Crear paciente y contactos
-            $paciente = Paciente::create($this->datosPaciente($data));
-            $this->guardarRelaciones($paciente, $data);
+        // retry por si dos usuarios generan el mismo folio al mismo tiempo (RNF-07)
+        $expediente = retry(3, function () use ($data) {
+            return DB::transaction(function () use ($data) {
+                $paciente = Paciente::create($this->datosPaciente($data));
+                $this->guardarRelaciones($paciente, $data);
 
-            // 2. Crear expediente
-            $expediente = Expediente::create([
-                'folioExpediente'  => $this->generarFolio(),
-                'idPaciente'       => $paciente->idPaciente,
-                'idUsuarioCreador' => auth()->id(),
-                'estado'           => 'activo',
-            ]);
+                $expediente = Expediente::create([
+                    'folioExpediente'  => $this->generarFolio(),
+                    'idPaciente'       => $paciente->idPaciente,
+                    'idUsuarioCreador' => Auth::id(),
+                    'estado'           => 'activo',
+                ]);
 
-            // 3. Guardar Perfil Clínico
-            $this->guardarPerfilClinico($expediente->folioExpediente, $data);
+                $this->guardarPerfilClinico($expediente->folioExpediente, $data);
 
-            // 4. Registrar Visita Inicial y Triage (si llenó los campos)
-            if (!empty($data['triage'])) {
-                $this->guardarVisitaInicial($expediente->folioExpediente, $data['triage']);
-            }
+                if (! empty($data['triage'])) {
+                    $this->guardarVisitaInicial($expediente->folioExpediente, $data['triage']);
+                }
 
-            return $expediente;
-        });
+                return $expediente;
+            });
+        }, 100, fn ($e) => $e instanceof UniqueConstraintViolationException);
 
-        return redirect()->route('expedientes.index')
+        return redirect()->route('expedientes.show', $expediente)
             ->with('success', "Expediente {$expediente->folioExpediente} creado exitosamente.");
     }
 
     public function edit(Expediente $expediente)
     {
         $expediente->load('paciente.telefonos', 'paciente.correos', 'paciente.contactos.telefonos', 'paciente.contactos.correos');
-        return view('expedientes.edit', compact('expediente'));
+        return view('expedientes.edit', compact('expediente') + $this->catalogosFormulario());
     }
 
     public function update(ExpedienteRequest $request, Expediente $expediente)
@@ -268,9 +277,6 @@ class ExpedienteController extends Controller
 
     // ---------- Auxiliares ----------
 
-
-
-
     private function datosPaciente(array $data): array
     {
         $paciente = Arr::only($data, ['nombres', 'apellido1', 'apellido2', 'curp', 'sexo',
@@ -341,6 +347,23 @@ class ExpedienteController extends Controller
                 'descripcion'     => $t['descripcion'] ?? null,
             ]);
         }
+
+        foreach ($data['tratamientos'] ?? [] as $t) {
+            $dosis = (filled($t['dosisValor'] ?? null) && filled($t['dosisUnidad'] ?? null))
+                ? Medicamento::textoConcentracion($t['dosisValor'], $t['dosisUnidad'])
+                : null;
+
+            Tratamiento::create([
+                'folioExpediente'   => $folio,
+                'idMedicamento'     => $t['idMedicamento'],
+                'dosis'             => $dosis,
+                'viaAdministracion' => $t['viaAdministracion'] ?? null,
+                'frecuencia'        => $t['frecuencia'] ?? null,
+                'fechaInicio'       => \App\Http\Requests\ExpedienteRequest::aISO($t['fechaInicio']),
+                'fechaFin'          => \App\Http\Requests\ExpedienteRequest::aISO($t['fechaFin'] ?? null),
+                'estado'            => 'activo',
+            ]);
+        }
     }
 
     private function guardarVisitaInicial(string $folio, array $triage): void
@@ -398,7 +421,9 @@ class ExpedienteController extends Controller
             'antecedentesGinecoObstetricos', // Relación con el modelo gineco
             'antecedentes',
             'alergias',
-            'visitas.datosAntropometricos', // Para ver el historial de triage/signos vitales
+            'tratamientos.medicamento',       // Etapa 4
+            'tratamientosNoFarmacologicos',   // Etapa 2
+            'visitas.datosAntropometricos',   // Para ver el historial de triage/signos vitales
             'creador'
         ]);
 

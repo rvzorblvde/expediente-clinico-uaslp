@@ -116,6 +116,23 @@
                 </section>
             </div>
 
+            {{-- Tratamientos farmacológicos --}}
+            <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+                <h3 class="text-lg font-semibold text-slate-900 mb-4 border-b pb-2">Tratamientos farmacológicos</h3>
+                @forelse($expediente->tratamientos as $tr)
+                    <div class="mb-3 pb-2 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0 text-sm">
+                        <span class="font-semibold text-slate-800">{{ $tr->medicamento?->nombre ?? 'Medicamento' }}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium ml-2 {{ $tr->estado === 'activo' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">{{ ucfirst($tr->estado) }}</span>
+                        <p class="text-slate-600 mt-0.5">
+                            {{ $tr->dosis ?? 'Dosis no especificada' }}{{ $tr->viaAdministracion ? " · {$tr->viaAdministracion}" : '' }}{{ $tr->frecuencia ? " · {$tr->frecuencia}" : '' }}
+                            · {{ $tr->fechaInicio->format('d/m/Y') }} — {{ $tr->fechaFin?->format('d/m/Y') ?? 'en curso' }}
+                        </p>
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-400 italic">No se registraron tratamientos farmacológicos.</p>
+                @endforelse
+            </section>
+
             {{-- Nueva medición de signos vitales --}}
             @if (session('success'))
                 <div class="mb-4 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">{{ session('success') }}</div>
