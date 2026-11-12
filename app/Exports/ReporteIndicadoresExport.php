@@ -105,7 +105,6 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
             $filas[] = [$nombresMeses[$m - 1], $nuevos, $activos, $pausa];
         }
         $this->filaFinMeses = count($filas);
-
         $filas[] = ['', '', '', '']; // Separador
 
         // 3. Problemas de Salud
@@ -140,14 +139,19 @@ class ReporteIndicadoresExport implements FromArray, WithTitle, WithEvents, With
 
         $medicamentos = DB::table('medicamentos')
             ->leftJoin('farmacovigilancia', function ($join) use ($inicioPeriodo, $finPeriodo) {
-                $join->on(
-                    DB::raw('LOWER(TRIM(medicamentos."principioActivo"))'),
-                    '=',
-                    DB::raw('LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))')
-                )
+                $join->where(function ($q) {
+                    $q->whereColumn('farmacovigilancia.medicamento_id', '=', 'medicamentos.idMedicamento')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('farmacovigilancia.medicamento_id')
+                                ->whereRaw('LOWER(TRIM(medicamentos."principioActivo")) = LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))');
+                        });
+                })
                     ->whereBetween('farmacovigilancia.created_at', [$inicioPeriodo, $finPeriodo]);
             })
-            ->select('medicamentos.principioActivo as nombre', DB::raw('COUNT(farmacovigilancia.id) as total'))
+            ->select(
+                'medicamentos.principioActivo as nombre',
+                DB::raw('COUNT(farmacovigilancia.id) as total')
+            )
             ->whereNotNull('medicamentos.principioActivo')
             ->where('medicamentos.principioActivo', '!=', '')
             ->groupBy('medicamentos.principioActivo')

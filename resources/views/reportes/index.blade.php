@@ -29,8 +29,7 @@
                         <select name="mes" class="rounded-lg border-slate-300 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             @foreach(range(1, $mesMax) as $m)
                                 <option value="{{ $m }}" {{ (request('mes', $ahora->month) == $m) ? 'selected' : '' }}>
-                                    {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->translatedFormat('F')) }}
-                                </option>
+                                    {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->translatedFormat('F')) }}                             </option>
                             @endforeach
                         </select>
                         <select name="anio" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:ring-blue-500">
