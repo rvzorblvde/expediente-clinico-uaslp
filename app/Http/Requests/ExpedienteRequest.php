@@ -59,6 +59,7 @@ class ExpedienteRequest extends FormRequest
                 ->values()->all(),
 
             'noFarmacologicos' => collect($this->input('noFarmacologicos', []))->filter(fn ($t) => filled($t['titulo'] ?? null))->values()->all(),
+            'tratamientos' => collect($this->input('tratamientos', []))->filter(fn ($t) => filled($t['idMedicamento'] ?? null))->values()->all(),
             'alergias'         => collect($this->input('alergias', []))->filter(fn ($a) => filled($a['sustancia'] ?? null))->values()->all(),
             'triage'           => collect($this->input('triage', []))->filter(fn ($val) => filled($val))->all(),
         ]);
@@ -147,6 +148,15 @@ class ExpedienteRequest extends FormRequest
             'noFarmacologicos.*.titulo'      => ['required', 'string', 'min:2', 'max:150'],
             'noFarmacologicos.*.descripcion' => ['nullable', 'string', 'max:2000'],
 
+            'tratamientos'                     => ['nullable', 'array', 'max:20'],
+            'tratamientos.*.idMedicamento'     => ['required', 'integer', 'exists:medicamentos,idMedicamento'],
+            'tratamientos.*.dosisValor'        => ['nullable', 'numeric', 'gt:0', 'max:999999'],
+            'tratamientos.*.dosisUnidad'       => ['nullable', Rule::in(config('medicamentos.unidades_concentracion'))],
+            'tratamientos.*.viaAdministracion' => ['nullable', Rule::in(config('medicamentos.vias_administracion'))],
+            'tratamientos.*.frecuencia'        => ['nullable', 'string', 'max:100'],
+            'tratamientos.*.fechaInicio'       => ['required', 'date_format:d/m/Y'],
+            'tratamientos.*.fechaFin'          => ['nullable', 'date_format:d/m/Y'],
+
             'gineco.embarazoActual'   => ['nullable', 'boolean'],
             'gineco.semanasGestacion' => ['nullable', 'integer', 'min:1', 'max:42', 'required_if:gineco.embarazoActual,1'],
             'gineco.menstruacion'     => ['nullable', 'boolean'],
@@ -179,6 +189,8 @@ class ExpedienteRequest extends FormRequest
             'antecedentes.*.nombre.required' => 'Detalla el nombre o título del antecedente (en "Otra", escribe cuál enfermedad).',
             'noFarmacologicos.*.titulo.required' => 'Cada tratamiento no farmacológico necesita un título.',
             'gineco.semanasGestacion.required_if' => 'Indica las semanas de gestación (1 a 42).',
+            'tratamientos.*.idMedicamento.required' => 'Selecciona el medicamento en cada tratamiento o quita el renglón vacío.',
+            'tratamientos.*.fechaInicio.required'   => 'Cada tratamiento necesita fecha de inicio.'
         ];
     }
 
@@ -232,6 +244,18 @@ class ExpedienteRequest extends FormRequest
                 if (filled($al['fechaAproximada'] ?? null)
                     && Carbon::createFromFormat('d/m/Y', $al['fechaAproximada'])->isAfter(today())) {
                     $v->errors()->add("alergias.{$i}.fechaAproximada", 'La fecha de la alergia ' . ($i + 1) . ' no puede ser futura.');
+                }
+            }
+
+            // Tratamientos: dosis en pareja y fin >= inicio
+            foreach ($this->input('tratamientos', []) as $i => $t) {
+                if (filled($t['dosisValor'] ?? null) xor filled($t['dosisUnidad'] ?? null)) {
+                    $v->errors()->add("tratamientos.{$i}.dosisValor", 'En el tratamiento ' . ($i + 1) . ', indica el valor y la unidad de la dosis.');
+                }
+                $ini = filled($t['fechaInicio'] ?? null) ? Carbon::createFromFormat('d/m/Y', $t['fechaInicio']) : null;
+                $fin = filled($t['fechaFin'] ?? null) ? Carbon::createFromFormat('d/m/Y', $t['fechaFin']) : null;
+                if ($ini && $fin && $fin->lt($ini)) {
+                    $v->errors()->add("tratamientos.{$i}.fechaFin", 'En el tratamiento ' . ($i + 1) . ', la fecha de fin es anterior a la de inicio.');
                 }
             }
 

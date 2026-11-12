@@ -44,9 +44,21 @@ class MedicamentoController extends Controller
     public function store(MedicamentoRequest $request)
     {
         try {
-            Medicamento::create($request->datos());
+            $medicamento = Medicamento::create($request->datos());
         } catch (UniqueConstraintViolationException) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => ['nombre' => ['Ya existe un medicamento con estos mismos datos.']]], 422);
+            }
             return back()->withInput()->withErrors(['nombre' => 'Ya existe un medicamento con estos mismos datos.']);
+        }
+
+        // Alta rápida desde el modal del expediente
+        if ($request->expectsJson()) {
+            return response()->json([
+                'idMedicamento' => $medicamento->idMedicamento,
+                'texto'         => trim($medicamento->nombre . ' ' . ($medicamento->concentracion ?? ''))
+                    . ($medicamento->presentacion ? ' · ' . $medicamento->presentacion : ''),
+            ], 201);
         }
 
         // Los estudiantes no tienen acceso al catálogo, solo a registrar

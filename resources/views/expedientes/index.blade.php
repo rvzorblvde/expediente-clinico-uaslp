@@ -127,21 +127,22 @@
                                             </a>
 
                                             @if ($e->estado === 'activo')
-                                                <form method="POST" action="{{ route('expedientes.destroy', $e) }}"
-                                                    onsubmit="return confirm('¿Desactivar el expediente {{ $e->folioExpediente }}?')">
+                                                <form method="POST" action="{{ route('expedientes.destroy', $e) }}" class="inline"
+                                                      data-confirm="¿Desactivar el expediente {{ $e->folioExpediente }}? Podrás reactivarlo después.">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit"
-                                                        class="px-3 py-1 text-xs font-medium text-red-700 bg-red-50 rounded hover:bg-red-100 transition-colors">
+                                                            class="px-3 py-1 text-xs font-medium text-red-700 bg-red-50 rounded hover:bg-red-100 transition-colors">
                                                         Desactivar
                                                     </button>
                                                 </form>
                                             @else
-                                                <form method="POST" action="{{ route('expedientes.restore', $e) }}">
+                                                <form method="POST" action="{{ route('expedientes.restore', $e) }}" class="inline"
+                                                      data-confirm="¿Reactivar el expediente {{ $e->folioExpediente }}?">
                                                     @csrf
                                                     @method('PATCH')
                                                     <button type="submit"
-                                                        class="px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded hover:bg-emerald-100 transition-colors">
+                                                            class="px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded hover:bg-emerald-100 transition-colors">
                                                         Reactivar
                                                     </button>
                                                 </form>

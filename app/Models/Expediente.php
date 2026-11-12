@@ -60,6 +60,11 @@ class Expediente extends Model
         return $this->hasMany(Visita::class, 'folioExpediente', 'folioExpediente');
     }
 
+    public function tratamientos()
+    {
+        return $this->hasMany(Tratamiento::class, 'folioExpediente', 'folioExpediente');
+    }
+
     public function tratamientosNoFarmacologicos()
     {
         return $this->hasMany(TratamientoNoFarmacologico::class, 'folioExpediente', 'folioExpediente');
