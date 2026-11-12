@@ -11,7 +11,7 @@ class DatosAntropometricos extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'idVisita', 'peso', 'talla', 'imc', 'temperatura', 'presionSistolica',
+        'idVisita', 'peso', 'talla', 'imc', 'presionSistolica',
         'presionDiastolica', 'pulsoPpm', 'frecuenciaRespiratoria', 'saturacionOxigeno'
     ];
 }
