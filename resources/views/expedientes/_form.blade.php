@@ -4,7 +4,7 @@
     $input  = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
     $select = 'w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
     $label  = 'block text-sm font-medium text-slate-700 mb-1';
-    $tipos  = ['Celular', 'Casa', 'Trabajo', 'Otro'];
+    $tipos = config('expediente.tipos_telefono');
 
     $telefonos = old('telefonos', $p
         ? $p->telefonos->map(fn ($t) => ['numero' => $t->numero, 'tipo' => $t->tipo])->all()
@@ -45,33 +45,38 @@
 @endif
 
 {{-- ========== Datos del paciente ========== --}}
-<section  id="sec-paciente" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+<section id="sec-paciente" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
     <h3 class="text-lg font-semibold text-slate-900 mb-4">Datos del paciente</h3>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
             <label for="nombres" class="{{ $label }}">Nombre(s) *</label>
-            <input type="text" id="nombres" name="nombres" value="{{ old('nombres', $p?->nombres) }}" maxlength="100" required class="{{ $input }}">
+            <input type="text" id="nombres" name="nombres" value="{{ old('nombres', $p?->nombres) }}" minlength="2" maxlength="100" required class="{{ $input }}">
+            @error('nombres') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         <div>
             <label for="apellido1" class="{{ $label }}">Primer apellido *</label>
-            <input type="text" id="apellido1" name="apellido1" value="{{ old('apellido1', $p?->apellido1) }}" maxlength="100" required class="{{ $input }}">
+            <input type="text" id="apellido1" name="apellido1" value="{{ old('apellido1', $p?->apellido1) }}" minlength="2" maxlength="100" required class="{{ $input }}">
+            @error('apellido1') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         <div>
             <label for="apellido2" class="{{ $label }}">Segundo apellido</label>
             <input type="text" id="apellido2" name="apellido2" value="{{ old('apellido2', $p?->apellido2) }}" maxlength="100" class="{{ $input }}">
+            @error('apellido2') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label for="fechaNac" class="{{ $label }}">Fecha de nacimiento *</label>
             <input type="text" id="fechaNac" name="fechaNac" value="{{ $fechaNac }}"
                    placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required class="{{ $input }}">
+            @error('fechaNac') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         <div class="sm:col-span-2">
-            <label for="curp" class="{{ $label }}">CURP * <span class="text-xs text-slate-400">(escríbelo manualmente)</span></label>
+            <label for="curp" class="{{ $label }}">CURP * <span class="text-xs text-slate-400">(se valida contra fecha de nacimiento y sexo)</span></label>
             <input type="text" id="curp" name="curp" value="{{ old('curp', $p?->curp) }}"
                    maxlength="18" required autocomplete="off" autocapitalize="characters" spellcheck="false"
                    class="{{ $input }} uppercase tracking-wider">
+            @error('curp') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
 
@@ -85,6 +90,39 @@
                     {{ $texto }}
                 </label>
             @endforeach
+        </div>
+        @error('sexo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        <div>
+            <label for="ocupacion" class="{{ $label }}">Ocupación</label>
+            <input type="text" id="ocupacion" name="ocupacion" value="{{ old('ocupacion', $p?->ocupacion) }}" maxlength="100"
+                   placeholder="Ej. Estudiante, comerciante..." class="{{ $input }}">
+            @error('ocupacion') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label for="escolaridad" class="{{ $label }}">Escolaridad</label>
+            <select id="escolaridad" name="escolaridad" class="{{ $input }} bg-white">
+                <option value="">Sin especificar</option>
+                @foreach (config('expediente.escolaridades') as $esc)
+                    <option value="{{ $esc }}" @selected(old('escolaridad', $p?->escolaridad) === $esc)>{{ $esc }}</option>
+                @endforeach
+            </select>
+            @error('escolaridad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+        <div>
+            <label for="servicioMedico" class="{{ $label }}">Servicio médico</label>
+            <select id="servicioMedico" name="servicioMedico" class="{{ $input }} bg-white">
+                <option value="">Sin especificar</option>
+                @foreach (config('expediente.servicios_medicos') as $sm)
+                    <option value="{{ $sm }}" @selected(old('servicioMedico', $p?->servicioMedico) === $sm)>{{ $sm }}</option>
+                @endforeach
+            </select>
+            @error('servicioMedico') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
 
@@ -121,6 +159,9 @@
     </div>
     <button type="button" data-add="tpl-telefono" data-target="#lista-telefonos"
             class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800">+ Agregar teléfono</button>
+    @error('telefonos') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('telefonos.*.numero') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('telefonos.*.tipo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 
     <div class="mt-6">
         <span class="{{ $label }}">Correos electrónicos <span class="text-xs text-slate-400">(opcional)</span></span>
@@ -150,6 +191,11 @@
 
     <button type="button" data-add="tpl-contacto" data-target="#lista-contactos"
             class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800">+ Agregar contacto de emergencia</button>
+    @error('contactos.*.nombres') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('contactos.*.apellido1') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('contactos.*.parentesco') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('contactos.*.telefonos') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('contactos.*.telefonos.*.numero') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 </section>
 
 {{-- ========== Antecedentes Clínicos (Enfermedades Previas) ========== --}}
@@ -356,10 +402,11 @@
 </div>
 
 {{-- ========== Plantillas para filas dinámicas ========== --}}
+{{-- ========== Plantillas para filas dinámicas ========== --}}
 <template id="tpl-telefono">
     <div class="fila flex items-center gap-2">
-        <input type="text" name="telefonos[__I__][numero]" placeholder="Número" maxlength="20" inputmode="tel" class="{{ $input }}">
-        <select name="telefonos[__I__][tipo]" class="{{ $select }}">
+        <input type="text" name="telefonos[__I__][numero]" placeholder="Número (10 dígitos)" maxlength="14" inputmode="tel" class="{{ $input }}">
+        <select name="telefonos[__I__][tipo]" class="{{ $select }} bg-white">
             @foreach ($tipos as $tipo)
                 <option value="{{ $tipo }}">{{ $tipo }}</option>
             @endforeach
@@ -381,7 +428,12 @@
 
 <template id="tpl-contacto-tel">
     <div class="fila flex items-center gap-2">
-        <input type="text" name="contactos[__I__][telefonos][]" placeholder="Número" maxlength="20" inputmode="tel" class="{{ $input }}">
+        <input type="text" name="contactos[__I__][telefonos][__J__][numero]" placeholder="Número (10 dígitos)" maxlength="14" inputmode="tel" class="{{ $input }}">
+        <select name="contactos[__I__][telefonos][__J__][tipo]" class="{{ $select }} bg-white">
+            @foreach ($tipos as $tipo)
+                <option value="{{ $tipo }}">{{ $tipo }}</option>
+            @endforeach
+        </select>
         <button type="button" data-remove=".fila" class="px-2 text-sm text-red-600 hover:text-red-800">Quitar</button>
     </div>
 </template>
@@ -435,7 +487,7 @@
     (function () {
         let uid = 1000; // índices únicos para filas nuevas
 
-        // Agregar y quitar filas
+        // ===== Agregar y quitar filas =====
         document.addEventListener('click', function (e) {
             const add = e.target.closest('[data-add]');
             if (add) {
@@ -443,11 +495,12 @@
                 let destino;
 
                 if (add.dataset.scope === 'contacto') {
+                    // Fila interna de un contacto: __I__ = índice del contacto, __J__ = índice nuevo del teléfono
                     const contacto = add.closest('[data-contacto]');
-                    html = html.replaceAll('__I__', contacto.dataset.contacto);
+                    html = html.replaceAll('__I__', contacto.dataset.contacto).replaceAll('__J__', uid++);
                     destino = contacto.querySelector(add.dataset.target);
                 } else {
-                    html = html.replaceAll('__I__', uid++);
+                    html = html.replaceAll('__I__', uid++).replaceAll('__J__', 0);
                     destino = document.querySelector(add.dataset.target);
                 }
                 destino.insertAdjacentHTML('beforeend', html);
@@ -468,7 +521,14 @@
             }
         });
 
-        // Fecha con máscara DD/MM/AAAA
+        // ===== Teléfonos: solo dígitos (delegado, cubre filas nuevas) =====
+        document.addEventListener('input', function (e) {
+            if (e.target.matches('input[inputmode="tel"]')) {
+                e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+            }
+        });
+
+        // ===== Fecha con máscara DD/MM/AAAA =====
         const fecha = document.getElementById('fechaNac');
         fecha.addEventListener('input', function () {
             const d = fecha.value.replace(/\D/g, '').slice(0, 8);
@@ -478,7 +538,7 @@
             fecha.value = out;
         });
 
-        // CURP: mayúsculas, solo alfanuméricos y sin pegar
+        // ===== CURP: mayúsculas, solo alfanuméricos y sin pegar =====
         const curp = document.getElementById('curp');
         curp.addEventListener('input', function () {
             curp.value = curp.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 18);
@@ -487,35 +547,44 @@
             curp.addEventListener(ev, function (e) { e.preventDefault(); });
         });
 
-        // Toggle Ginecoobstétricos según Sexo
-        const radiosSexo = document.querySelectorAll('input[name="sexo"]');
+        // ===== Gineco según sexo (formulario y sidebar) =====
         const seccionGineco = document.getElementById('seccion-gineco');
+        const navGineco = document.getElementById('nav-gineco');
 
-        radiosSexo.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'F') {
-                    seccionGineco.classList.remove('hidden');
-                } else {
-                    seccionGineco.classList.add('hidden');
-                }
+        document.querySelectorAll('input[name="sexo"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                const esF = this.value === 'F';
+                if (seccionGineco) seccionGineco.classList.toggle('hidden', !esF);
+                if (navGineco) navGineco.classList.toggle('hidden', !esF);
             });
         });
 
-        // Toggle Descripción de Drogas
+        // ===== Semanas de gestación según embarazo =====
+        const selectEmbarazo = document.getElementById('select-embarazo');
+        const inputSemanas = document.getElementById('input-semanas');
+
+        if (selectEmbarazo) {
+            selectEmbarazo.addEventListener('change', function () {
+                const embarazada = this.value === '1';
+                inputSemanas.disabled = !embarazada;
+                if (embarazada) inputSemanas.focus();
+                else inputSemanas.value = '';
+            });
+            selectEmbarazo.dispatchEvent(new Event('change'));
+        }
+
+        // ===== Descripción de drogas =====
         const selectDrogas = document.getElementById('select-drogas');
         const descDrogas = document.getElementById('desc-drogas');
 
-        selectDrogas.addEventListener('change', function() {
-            if (this.value !== 'Nunca') {
-                descDrogas.disabled = false;
-                descDrogas.focus();
-            } else {
-                descDrogas.disabled = true;
-                descDrogas.value = '';
-            }
+        selectDrogas.addEventListener('change', function () {
+            const consume = this.value !== 'Nunca';
+            descDrogas.disabled = !consume;
+            if (consume) descDrogas.focus();
+            else descDrogas.value = '';
         });
 
-        // Cálculo automático del IMC
+        // ===== Cálculo automático del IMC =====
         const inputPeso = document.getElementById('peso');
         const inputTalla = document.getElementById('talla');
         const inputImc = document.getElementById('imc');
@@ -523,49 +592,9 @@
         function calcularIMC() {
             const peso = parseFloat(inputPeso.value);
             const talla = parseFloat(inputTalla.value);
-            if (peso > 0 && talla > 0) {
-                const imc = peso / (talla * talla);
-                inputImc.value = imc.toFixed(2);
-            } else {
-                inputImc.value = '';
-            }
+            inputImc.value = (peso > 0 && talla > 0) ? (peso / (talla * talla)).toFixed(2) : '';
         }
         inputPeso.addEventListener('input', calcularIMC);
         inputTalla.addEventListener('input', calcularIMC);
     })();
-
-    // Activar/Desactivar semanas de gestación
-    const selectEmbarazo = document.getElementById('select-embarazo');
-    const inputSemanas = document.getElementById('input-semanas');
-
-    if (selectEmbarazo) {
-        selectEmbarazo.addEventListener('change', function() {
-            if (this.value === '1') {
-                inputSemanas.disabled = false;
-                inputSemanas.focus();
-            } else {
-                inputSemanas.disabled = true;
-                inputSemanas.value = '';
-            }
-        });
-        // Ejecutar una vez al cargar por si está preseleccionado
-        selectEmbarazo.dispatchEvent(new Event('change'));
-    }
-
-    // Toggle Ginecoobstétricos según Sexo (Formulario y Sidebar)
-    const radiosSexo = document.querySelectorAll('input[name="sexo"]');
-    const seccionGineco = document.getElementById('seccion-gineco');
-    const navGineco = document.getElementById('nav-gineco'); // <-- Capturamos el li del sidebar
-
-    radiosSexo.forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.value === 'F') {
-                if (seccionGineco) seccionGineco.classList.remove('hidden');
-                if (navGineco) navGineco.classList.remove('hidden');      // <-- Lo mostramos
-            } else {
-                if (seccionGineco) seccionGineco.classList.add('hidden');
-                if (navGineco) navGineco.classList.add('hidden');         // <-- Lo ocultamos
-            }
-        });
-    });
 </script>

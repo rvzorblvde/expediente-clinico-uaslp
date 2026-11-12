@@ -34,11 +34,14 @@ class ExpedienteSeeder extends Seeder
                 'fechaNac' => '1995-05-12',
                 'curp' => 'LOHM950512MSRHRN01',
                 'sexo' => 'F',
+                'ocupacion' => 'Enfermera',
+                'escolaridad' => 'Universidad',
+                'servicioMedico' => 'IMSS',
                 'lugarProcedencia' => 'San Luis Potosí, S.L.P.',
                 'lugarResidencia' => 'Soledad de Graciano Sánchez',
                 'telefonos' => [['numero' => '4441234567', 'tipo' => 'Celular']],
                 'correos' => ['mfer.lopez@example.com'],
-                'contacto' => ['nombres' => 'Carlos', 'apellido1' => 'López', 'apellido2' => 'Pérez', 'parentesco' => 'Padre', 'telefono' => '4449876543'],
+                'contacto' => ['nombres' => 'Carlos', 'apellido1' => 'López', 'apellido2' => 'Pérez', 'parentesco' => 'Familiar', 'telefono' => '4449876543'],
                 'triage' => ['peso' => 65.5, 'talla' => 1.68, 'saturacion' => 98, 'sistolica' => 120, 'diastolica' => 80, 'pulso' => 72, 'resp' => 18],
                 'gineco' => ['embarazoActual' => 0, 'semanas' => null, 'menstruacion' => 1, 'lactancia' => 0, 'obs' => 'Sin alteraciones.'],
                 'alergias' => [['sustancia' => 'Penicilina', 'reaccion' => 'Urticaria', 'severidad' => 'Moderada']],
@@ -51,15 +54,18 @@ class ExpedienteSeeder extends Seeder
                 'fechaNac' => '1988-10-20',
                 'curp' => 'PEGJ881020HSRGRC04',
                 'sexo' => 'M',
+                'ocupacion' => 'Comerciante',
+                'escolaridad' => 'Medio superior',
+                'servicioMedico' => 'Ninguno',
                 'lugarProcedencia' => 'Matehuala, S.L.P.',
                 'lugarResidencia' => 'San Luis Potosí, S.L.P.',
                 'telefonos' => [['numero' => '4881122334', 'tipo' => 'Celular']],
                 'correos' => ['juanc.perez@example.com'],
-                'contacto' => ['nombres' => 'Ana', 'apellido1' => 'García', 'apellido2' => 'López', 'parentesco' => 'Esposa', 'telefono' => '4445556677'],
+                'contacto' => ['nombres' => 'Ana', 'apellido1' => 'García', 'apellido2' => 'López', 'parentesco' => 'Pareja', 'telefono' => '4445556677'],
                 'triage' => ['peso' => 82.0, 'talla' => 1.75, 'saturacion' => 97, 'sistolica' => 130, 'diastolica' => 85, 'pulso' => 78, 'resp' => 20],
                 'gineco' => null,
                 'alergias' => [['sustancia' => 'Aspirina', 'reaccion' => 'Gastritis severa', 'severidad' => 'Leve']],
-                'antecedentes' => [['tipo' => 'Médico', 'nombre' => 'Hipertensión arterial', 'descripcion' => 'Controlada con Enalapril.']]
+                'antecedentes' => [['tipo' => 'Enfermedad', 'nombre' => 'Hipertensión arterial', 'descripcion' => 'Controlada con Enalapril.']]
             ],
             [
                 'nombres' => 'Sofía Valentina',
@@ -68,11 +74,14 @@ class ExpedienteSeeder extends Seeder
                 'fechaNac' => '2001-03-04',
                 'curp' => 'RATS010304MSRMTRS2',
                 'sexo' => 'F',
+                'ocupacion' => 'Estudiante',
+                'escolaridad' => 'Universidad',
+                'servicioMedico' => 'Particular',
                 'lugarProcedencia' => 'Guadalajara, Jalisco',
                 'lugarResidencia' => 'San Luis Potosí, S.L.P.',
                 'telefonos' => [['numero' => '4447788990', 'tipo' => 'Celular']],
                 'correos' => ['sofia.ramirez@example.com'],
-                'contacto' => ['nombres' => 'Roberto', 'apellido1' => 'Ramírez', 'apellido2' => 'Sánchez', 'parentesco' => 'Padre', 'telefono' => '4443332211'],
+                'contacto' => ['nombres' => 'Roberto', 'apellido1' => 'Ramírez', 'apellido2' => 'Sánchez', 'parentesco' => 'Familiar', 'telefono' => '4443332211'],
                 'triage' => ['peso' => 58.0, 'talla' => 1.62, 'saturacion' => 99, 'sistolica' => 110, 'diastolica' => 70, 'pulso' => 68, 'resp' => 16],
                 'gineco' => ['embarazoActual' => 1, 'semanas' => 14, 'menstruacion' => 0, 'lactancia' => 0, 'obs' => 'Control prenatal regular.'],
                 'alergias' => [],
@@ -85,15 +94,18 @@ class ExpedienteSeeder extends Seeder
                 'fechaNac' => '1975-12-01',
                 'curp' => 'MOCL751201HSRMCR08',
                 'sexo' => 'M',
+                'ocupacion' => 'Contador',
+                'escolaridad' => 'Universidad',
+                'servicioMedico' => 'ISSSTE',
                 'lugarProcedencia' => 'San Luis Potosí, S.L.P.',
                 'lugarResidencia' => 'San Luis Potosí, S.L.P.',
-                'telefonos' => [['numero' => '4449900112', 'tipo' => 'Trabajo']],
+                'telefonos' => [['numero' => '4449900112', 'tipo' => 'Fijo']],
                 'correos' => ['luism.morales@example.com'],
-                'contacto' => ['nombres' => 'Claudia', 'apellido1' => 'Morales', 'apellido2' => 'Castro', 'parentesco' => 'Hija', 'telefono' => '4441112233'],
+                'contacto' => ['nombres' => 'Claudia', 'apellido1' => 'Morales', 'apellido2' => 'Castro', 'parentesco' => 'Familiar', 'telefono' => '4441112233'],
                 'triage' => ['peso' => 90.5, 'talla' => 1.70, 'saturacion' => 96, 'sistolica' => 140, 'diastolica' => 90, 'pulso' => 82, 'resp' => 22],
                 'gineco' => null,
                 'alergias' => [['sustancia' => 'Mariscos', 'reaccion' => 'Anafilaxia', 'severidad' => 'Severa']],
-                'antecedentes' => [['tipo' => 'Médico', 'nombre' => 'Diabetes Mellitus Tipo 2', 'descripcion' => 'En tratamiento con Metformina.']]
+                'antecedentes' => [['tipo' => 'Enfermedad', 'nombre' => 'Diabetes Mellitus Tipo 2', 'descripcion' => 'En tratamiento con Metformina.']]
             ],
             [
                 'nombres' => 'Ana Karen',
@@ -102,11 +114,14 @@ class ExpedienteSeeder extends Seeder
                 'fechaNac' => '1999-07-15',
                 'curp' => 'FOJA990715MSRFJM03',
                 'sexo' => 'F',
+                'ocupacion' => 'Diseñadora gráfica',
+                'escolaridad' => 'Universidad',
+                'servicioMedico' => 'IMSS',
                 'lugarProcedencia' => 'Rioverde, S.L.P.',
                 'lugarResidencia' => 'Soledad de Graciano Sánchez',
                 'telefonos' => [['numero' => '4871234567', 'tipo' => 'Celular']],
                 'correos' => ['anak.flores@example.com'],
-                'contacto' => ['nombres' => 'Guadalupe', 'apellido1' => 'Jiménez', 'apellido2' => 'Rojas', 'parentesco' => 'Madre', 'telefono' => '4879876543'],
+                'contacto' => ['nombres' => 'Guadalupe', 'apellido1' => 'Jiménez', 'apellido2' => 'Rojas', 'parentesco' => 'Familiar', 'telefono' => '4879876543'],
                 'triage' => ['peso' => 61.0, 'talla' => 1.65, 'saturacion' => 99, 'sistolica' => 115, 'diastolica' => 75, 'pulso' => 75, 'resp' => 18],
                 'gineco' => ['embarazoActual' => 0, 'semanas' => null, 'menstruacion' => 1, 'lactancia' => 1, 'obs' => 'Lactancia materna exclusiva.'],
                 'alergias' => [],
@@ -119,15 +134,18 @@ class ExpedienteSeeder extends Seeder
                 'fechaNac' => '2004-01-30',
                 'curp' => 'VAOD040130HSRVRT05',
                 'sexo' => 'M',
+                'ocupacion' => 'Estudiante',
+                'escolaridad' => 'Medio superior',
+                'servicioMedico' => 'IMSS-Bienestar',
                 'lugarProcedencia' => 'San Luis Potosí, S.L.P.',
                 'lugarResidencia' => 'San Luis Potosí, S.L.P.',
                 'telefonos' => [['numero' => '4443344556', 'tipo' => 'Celular']],
                 'correos' => ['david.vazquez@example.com'],
-                'contacto' => ['nombres' => 'Patricia', 'apellido1' => 'Ortiz', 'apellido2' => 'Vega', 'parentesco' => 'Madre', 'telefono' => '4446655443'],
+                'contacto' => ['nombres' => 'Patricia', 'apellido1' => 'Ortiz', 'apellido2' => 'Vega', 'parentesco' => 'Familiar', 'telefono' => '4446655443'],
                 'triage' => ['peso' => 70.0, 'talla' => 1.80, 'saturacion' => 100, 'sistolica' => 120, 'diastolica' => 80, 'pulso' => 70, 'resp' => 16],
                 'gineco' => null,
                 'alergias' => [['sustancia' => 'Lidocaína', 'reaccion' => 'Mareos y palpitaciones', 'severidad' => 'Leve']],
-                'antecedentes' => [['tipo' => 'Traumático', 'nombre' => 'Esguince cervical', 'descripcion' => 'Lesión deportiva en 2024, rehabilitado.']]
+                'antecedentes' => [['tipo' => 'Otro', 'nombre' => 'Esguince cervical', 'descripcion' => 'Lesión deportiva en 2024, rehabilitado.']]
             ]
         ];
 
@@ -141,6 +159,9 @@ class ExpedienteSeeder extends Seeder
                     'fechaNac' => $data['fechaNac'],
                     'curp' => $data['curp'],
                     'sexo' => $data['sexo'],
+                    'ocupacion' => $data['ocupacion'],
+                    'escolaridad' => $data['escolaridad'],
+                    'servicioMedico' => $data['servicioMedico'],
                     'lugarProcedencia' => $data['lugarProcedencia'],
                     'lugarResidencia' => $data['lugarResidencia'],
                 ]);
@@ -161,7 +182,11 @@ class ExpedienteSeeder extends Seeder
                     'apellido2' => $data['contacto']['apellido2'],
                     'parentesco' => $data['contacto']['parentesco'],
                 ]);
-                ContactoTelefono::create(['idContacto' => $contacto->idContacto, 'numero' => $data['contacto']['telefono']]);
+                ContactoTelefono::create([
+                    'idContacto' => $contacto->idContacto,
+                    'numero'     => $data['contacto']['telefono'],
+                    'tipo'       => 'Celular',
+                ]);
 
                 // 4. Folio único de expediente (Ej: EXP-2026-0001, etc.)
                 $folio = sprintf('EXP-2026-%04d', $index + 1);
