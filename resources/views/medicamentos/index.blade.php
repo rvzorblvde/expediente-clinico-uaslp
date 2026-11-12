@@ -81,7 +81,7 @@
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <a href="{{ route('medicamentos.edit', $medicamento) }}" class="text-blue-600 hover:underline mr-3">Editar</a>
                                 <form action="{{ route('medicamentos.destroy', $medicamento) }}" method="POST" class="inline"
-                                      onsubmit="return confirm('¿Eliminar «{{ e($medicamento->nombre) }}»? Esta acción no se puede deshacer.')">
+                                      data-confirm="¿Eliminar «{{ $medicamento->nombre }}»? Esta acción no se puede deshacer.">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:underline">Eliminar</button>
