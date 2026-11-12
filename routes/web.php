@@ -31,14 +31,10 @@ Route::middleware(['auth'])->group(function () {
     //Visitas
     Route::resource('visitas', VisitaController::class);
 
-    //Medicamentos
-
+    // Medicamentos: cualquier usuario autenticado puede registrar (estudiantes incluidos)
     Route::get('/medicamentos', [MedicamentoController::class, 'index'])->name('medicamentos.index');
     Route::get('/medicamentos/crear', [MedicamentoController::class, 'create'])->name('medicamentos.create');
     Route::post('/medicamentos', [MedicamentoController::class, 'store'])->name('medicamentos.store');
-    Route::get('/medicamentos/{medicamento}/editar', [MedicamentoController::class, 'edit'])->name('medicamentos.edit');
-    Route::put('/medicamentos/{medicamento}', [MedicamentoController::class, 'update'])->name('medicamentos.update');
-    Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
 
     // Farmacovigilancia
     Route::get('/farmacovigilancia', [FarmacovigilanciaController::class, 'index'])->name('farmacovigilancia.index');
@@ -56,9 +52,6 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/expedientes/{expediente}/restaurar', [ExpedienteController::class, 'restore'])->name('expedientes.restore');
 
         // Registro y control de medicamentos
-        Route::get('/medicamentos', [MedicamentoController::class, 'index'])->name('medicamentos.index');
-        Route::get('/medicamentos/crear', [MedicamentoController::class, 'create'])->name('medicamentos.create');
-        Route::post('/medicamentos', [MedicamentoController::class, 'store'])->name('medicamentos.store');
         Route::get('/medicamentos/{medicamento}/editar', [MedicamentoController::class, 'edit'])->name('medicamentos.edit');
         Route::put('/medicamentos/{medicamento}', [MedicamentoController::class, 'update'])->name('medicamentos.update');
         Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
