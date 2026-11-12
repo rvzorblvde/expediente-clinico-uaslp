@@ -51,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/expedientes/{expediente}', [ExpedienteController::class, 'update'])->name('expedientes.update');
         Route::delete('/expedientes/{expediente}', [ExpedienteController::class, 'destroy'])->name('expedientes.destroy');
         Route::patch('/expedientes/{expediente}/restaurar', [ExpedienteController::class, 'restore'])->name('expedientes.restore');
+        Route::post('/expedientes/{expediente}/mediciones', [ExpedienteController::class, 'registrarMedicion'])->name('expedientes.mediciones');
 
         // Historial y agenda de visitas (RF-05: solo Trabajador y RS)
         Route::get('/visitas', [VisitaController::class, 'index'])->name('visitas.index');

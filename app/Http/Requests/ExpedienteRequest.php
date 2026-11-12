@@ -46,7 +46,7 @@ class ExpedienteRequest extends FormRequest
                     || $c['telefonos'] || $c['correos'])
                 ->values()->all(),
 
-            // Limpieza de datos clínicos (igual que antes)
+            // Limpieza de datos clínicos
             'antecedentes' => collect($this->input('antecedentes', []))
                 ->map(function ($a) {
                     // Si eligió una enfermedad de la lista, esa es el nombre del antecedente
@@ -59,9 +59,24 @@ class ExpedienteRequest extends FormRequest
                 ->values()->all(),
 
             'noFarmacologicos' => collect($this->input('noFarmacologicos', []))->filter(fn ($t) => filled($t['titulo'] ?? null))->values()->all(),
-            'alergias'     => collect($this->input('alergias', []))->filter(fn ($a) => filled($a['sustancia'] ?? null))->values()->all(),
-            'triage'       => collect($this->input('triage', []))->filter(fn ($val) => filled($val))->all(),
+            'alergias'         => collect($this->input('alergias', []))->filter(fn ($a) => filled($a['sustancia'] ?? null))->values()->all(),
+            'triage'           => collect($this->input('triage', []))->filter(fn ($val) => filled($val))->all(),
         ]);
+
+        // Gineco: para M/X solo existe si se activó explícitamente (caso especial)
+        $gineco = $this->input('gineco');
+        if (is_array($gineco)) {
+            $activo = $this->input('sexo') === 'F' || !empty($gineco['activo']);
+            if (! $activo) {
+                $gineco = null;
+            } else {
+                if (($gineco['embarazoActual'] ?? '0') != 1) {
+                    $gineco['semanasGestacion'] = null; // sin embarazo no hay semanas
+                }
+                unset($gineco['activo']);
+            }
+            $this->merge(['gineco' => $gineco]);
+        }
     }
 
     public function rules(): array
@@ -105,6 +120,7 @@ class ExpedienteRequest extends FormRequest
             'contactos.*.telefonos.*.tipo'   => ['required', $tiposTel],
             'contactos.*.correos.*'          => ['email', 'max:255'],
 
+            // --- Perfil clínico ---
             'antecedentes'               => ['nullable', 'array', 'max:20'],
             'antecedentes.*.tipo'        => ['required', Rule::in(config('expediente.tipos_antecedente'))],
             'antecedentes.*.enfermedad'  => ['nullable', Rule::in([...config('expediente.enfermedades'), 'Otra'])],
@@ -132,7 +148,7 @@ class ExpedienteRequest extends FormRequest
             'noFarmacologicos.*.descripcion' => ['nullable', 'string', 'max:2000'],
 
             'gineco.embarazoActual'   => ['nullable', 'boolean'],
-            'gineco.semanasGestacion' => ['nullable', 'integer', 'min:0', 'max:42'],
+            'gineco.semanasGestacion' => ['nullable', 'integer', 'min:1', 'max:42', 'required_if:gineco.embarazoActual,1'],
             'gineco.menstruacion'     => ['nullable', 'boolean'],
             'gineco.lactancia'        => ['nullable', 'boolean'],
             'gineco.observaciones'    => ['nullable', 'string'],
@@ -161,17 +177,18 @@ class ExpedienteRequest extends FormRequest
             'telefonos.*.tipo.required' => 'Indica si el teléfono es celular o fijo.',
             'contactos.*.telefonos.required' => 'Cada contacto de emergencia necesita al menos un teléfono.',
             'antecedentes.*.nombre.required' => 'Detalla el nombre o título del antecedente (en "Otra", escribe cuál enfermedad).',
-            'noFarmacologicos.*.titulo.required' => 'Cada tratamiento no farmacológico necesita un título.'
+            'noFarmacologicos.*.titulo.required' => 'Cada tratamiento no farmacológico necesita un título.',
+            'gineco.semanasGestacion.required_if' => 'Indica las semanas de gestación (1 a 42).',
         ];
     }
 
     public function attributes(): array
     {
         return [
-            'fechaNac'       => 'fecha de nacimiento',
-            'telefonos.*.numero' => 'teléfono del paciente',
+            'fechaNac'                       => 'fecha de nacimiento',
+            'telefonos.*.numero'             => 'teléfono del paciente',
             'contactos.*.telefonos.*.numero' => 'teléfono del contacto',
-            'contactos.*.parentesco' => 'parentesco',
+            'contactos.*.parentesco'         => 'parentesco',
         ];
     }
 
@@ -216,6 +233,12 @@ class ExpedienteRequest extends FormRequest
                     && Carbon::createFromFormat('d/m/Y', $al['fechaAproximada'])->isAfter(today())) {
                     $v->errors()->add("alergias.{$i}.fechaAproximada", 'La fecha de la alergia ' . ($i + 1) . ' no puede ser futura.');
                 }
+            }
+
+            // Embarazo y menstruación son excluyentes
+            $g = $this->input('gineco');
+            if (is_array($g) && ($g['embarazoActual'] ?? 0) == 1 && ($g['menstruacion'] ?? 0) == 1) {
+                $v->errors()->add('gineco.menstruacion', 'Si hay embarazo actual no puede haber menstruación activa, y viceversa.');
             }
         }];
     }

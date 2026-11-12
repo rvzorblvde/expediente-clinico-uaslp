@@ -302,8 +302,15 @@ class ExpedienteController extends Controller
     {
         Habito::create(array_merge(['folioExpediente' => $folio], $data['habitos']));
 
-        if ($data['sexo'] === 'F') {
-            AntecedenteGinecoObstetrico::create(array_merge(['folioExpediente' => $folio], $data['gineco'] ?? []));
+        if (! empty($data['gineco'])) {
+            AntecedenteGinecoObstetrico::create([
+                'folioExpediente'  => $folio,
+                'embarazoActual'   => (bool) ($data['gineco']['embarazoActual'] ?? false),
+                'semanasGestacion' => $data['gineco']['semanasGestacion'] ?? null,
+                'menstruacion'     => (bool) ($data['gineco']['menstruacion'] ?? false),
+                'lactancia'        => (bool) ($data['gineco']['lactancia'] ?? false),
+                'observaciones'    => $data['gineco']['observaciones'] ?? null,
+            ]);
         }
 
         foreach ($data['antecedentes'] ?? [] as $a) {
@@ -359,6 +366,7 @@ class ExpedienteController extends Controller
             'peso'                   => $peso,
             'talla'                  => $talla,
             'imc'                    => $imc,
+            'temperatura'            => $triage['temperatura'] ?? null,
             'presionSistolica'       => $triage['presionSistolica'] ?? null,
             'presionDiastolica'      => $triage['presionDiastolica'] ?? null,
             'pulsoPpm'               => $triage['pulsoPpm'] ?? null,
@@ -409,5 +417,60 @@ class ExpedienteController extends Controller
         ]);
 
         return view('expedientes.show', compact('expediente'));
+    }
+
+    public function registrarMedicion(Request $request, Expediente $expediente)
+    {
+        if ($expediente->estado !== 'activo') {
+            return back()->with('error', 'El expediente está inactivo; reactívalo para registrar mediciones.');
+        }
+
+        $validated = $request->validate([
+            'triage.peso'                   => ['nullable', 'numeric', 'min:0.5', 'max:400'],
+            'triage.talla'                  => ['nullable', 'numeric', 'min:0.3', 'max:2.5'],
+            'triage.temperatura'            => ['nullable', 'numeric', 'min:30', 'max:45'],
+            'triage.saturacionOxigeno'      => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'triage.presionSistolica'       => ['nullable', 'integer', 'min:0', 'max:300'],
+            'triage.presionDiastolica'      => ['nullable', 'integer', 'min:0', 'max:200'],
+            'triage.pulsoPpm'               => ['nullable', 'integer', 'min:0', 'max:300'],
+            'triage.frecuenciaRespiratoria' => ['nullable', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $triage = array_filter($validated['triage'] ?? [], fn ($v) => $v !== null && $v !== '');
+        if (empty($triage)) {
+            return back()->with('error', 'Captura al menos un signo vital para registrar la medición.');
+        }
+
+        DB::transaction(function () use ($expediente, $triage) {
+            // Cada medición posterior a la inicial es una visita de seguimiento con fecha del sistema
+            $visita = Visita::create([
+                'folioExpediente' => $expediente->folioExpediente,
+                'idUsuario'       => auth()->id(),
+                'fecha'           => now(),
+                'tipo'            => 'seguimiento',
+                'motivo'          => 'Registro de signos vitales',
+                'estado'          => 'completada',
+            ]);
+
+            $imc = null;
+            if (!empty($triage['peso']) && !empty($triage['talla'])) {
+                $imc = round($triage['peso'] / ($triage['talla'] ** 2), 2);
+            }
+
+            DatosAntropometricos::create([
+                'idVisita'               => $visita->idVisita,
+                'peso'                   => $triage['peso'] ?? null,
+                'talla'                  => $triage['talla'] ?? null,
+                'imc'                    => $imc,
+                'temperatura'            => $triage['temperatura'] ?? null,
+                'presionSistolica'       => $triage['presionSistolica'] ?? null,
+                'presionDiastolica'      => $triage['presionDiastolica'] ?? null,
+                'pulsoPpm'               => $triage['pulsoPpm'] ?? null,
+                'frecuenciaRespiratoria' => $triage['frecuenciaRespiratoria'] ?? null,
+                'saturacionOxigeno'      => $triage['saturacionOxigeno'] ?? null,
+            ]);
+        });
+
+        return back()->with('success', 'Medición de signos vitales registrada.');
     }
 }
