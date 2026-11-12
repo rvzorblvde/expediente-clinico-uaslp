@@ -386,42 +386,59 @@
     @error('noFarmacologicos.*.titulo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 </section>
 
-{{-- ========== Antecedentes Ginecoobstétricos (Oculto por defecto) ========== --}}
-@php $gineco = old('gineco', []); @endphp
-<section id="seccion-gineco" class="{{ $sexo === 'F' ? '' : 'hidden' }} bg-rose-50 rounded-xl border border-rose-200 shadow-sm p-6 mb-6">
-    <h3 class="text-lg font-semibold text-rose-900 mb-4">Antecedentes Ginecoobstétricos</h3>
+{{-- ========== Antecedentes Ginecoobstétricos (siempre visible; activable para casos especiales) ========== --}}
+@php
+    $gineco = old('gineco', []);
+    $ginecoActivo = old('gineco.activo', $sexo === 'F' ? '1' : '0');
+@endphp
+<section id="seccion-gineco" class="bg-rose-50 rounded-xl border border-rose-200 shadow-sm p-6 mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h3 class="text-lg font-semibold text-rose-900">Antecedentes Ginecoobstétricos</h3>
+        <label id="gineco-toggle" class="inline-flex items-center gap-2 text-sm text-rose-900 cursor-pointer" hidden>
+            <input type="checkbox" id="gineco-activo" name="gineco[activo]" value="1"
+                   {{ $ginecoActivo === '1' ? 'checked' : '' }} class="rounded border-rose-300 text-rose-600">
+            Activar sección (caso especial)
+        </label>
+    </div>
+    <p id="gineco-nota" class="text-sm text-slate-400 mb-4" hidden>
+        Sección deshabilitada para el sexo seleccionado. Actívala solo en casos especiales.
+    </p>
 
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+    <fieldset id="gineco-campos" class="grid grid-cols-1 sm:grid-cols-4 gap-4 disabled:opacity-50">
         <div>
             <span class="{{ $label }}">¿Embarazo actual?</span>
             <select name="gineco[embarazoActual]" id="select-embarazo" class="{{ $input }}">
-                <option value="0" {{ ($gineco['embarazoActual'] ?? '0') === '0' ? 'selected' : '' }}>No</option>
-                <option value="1" {{ ($gineco['embarazoActual'] ?? '0') === '1' ? 'selected' : '' }}>Sí</option>
+                <option value="0" {{ ($gineco['embarazoActual'] ?? '0') == '0' ? 'selected' : '' }}>No</option>
+                <option value="1" {{ ($gineco['embarazoActual'] ?? '0') == '1' ? 'selected' : '' }}>Sí</option>
             </select>
+            @error('gineco.embarazoActual') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         <div>
             <label class="{{ $label }}">Semanas de gestación</label>
-            <input type="number" name="gineco[semanasGestacion]" id="input-semanas" value="{{ $gineco['semanasGestacion'] ?? '' }}" min="0" max="42" class="{{ $input }} disabled:bg-slate-100 disabled:cursor-not-allowed" disabled>
+            <input type="number" name="gineco[semanasGestacion]" id="input-semanas" value="{{ $gineco['semanasGestacion'] ?? '' }}"
+                   min="1" max="42" class="{{ $input }} disabled:bg-slate-100 disabled:cursor-not-allowed" disabled>
+            @error('gineco.semanasGestacion') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         <div>
             <span class="{{ $label }}">¿Menstruación activa?</span>
-            <select name="gineco[menstruacion]" class="{{ $input }}">
-                <option value="0" {{ ($gineco['menstruacion'] ?? '0') === '0' ? 'selected' : '' }}>No</option>
-                <option value="1" {{ ($gineco['menstruacion'] ?? '0') === '1' ? 'selected' : '' }}>Sí</option>
+            <select name="gineco[menstruacion]" id="select-menstruacion" class="{{ $input }}">
+                <option value="0" {{ ($gineco['menstruacion'] ?? '0') == '0' ? 'selected' : '' }}>No</option>
+                <option value="1" {{ ($gineco['menstruacion'] ?? '0') == '1' ? 'selected' : '' }}>Sí</option>
             </select>
+            @error('gineco.menstruacion') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         <div>
             <span class="{{ $label }}">¿Lactancia activa?</span>
             <select name="gineco[lactancia]" class="{{ $input }}">
-                <option value="0" {{ ($gineco['lactancia'] ?? '0') === '0' ? 'selected' : '' }}>No</option>
-                <option value="1" {{ ($gineco['lactancia'] ?? '0') === '1' ? 'selected' : '' }}>Sí</option>
+                <option value="0" {{ ($gineco['lactancia'] ?? '0') == '0' ? 'selected' : '' }}>No</option>
+                <option value="1" {{ ($gineco['lactancia'] ?? '0') == '1' ? 'selected' : '' }}>Sí</option>
             </select>
         </div>
         <div class="sm:col-span-4">
             <label class="{{ $label }}">Observaciones adicionales</label>
             <textarea name="gineco[observaciones]" rows="2" class="{{ $input }}">{{ $gineco['observaciones'] ?? '' }}</textarea>
         </div>
-    </div>
+    </fieldset>
 </section>
 
 {{-- ========== Triage / Visita Inicial (Opcional) ========== --}}
@@ -446,6 +463,10 @@
         <div>
             <label class="{{ $label }}">Sat. Oxígeno (%)</label>
             <input type="number" step="0.1" min="0" max="100" name="triage[saturacionOxigeno]" value="{{ $triage['saturacionOxigeno'] ?? '' }}" class="{{ $input }}">
+        </div>
+        <div>
+            <label class="{{ $label }}">Temperatura (°C)</label>
+            <input type="number" step="0.1" min="30" max="45" name="triage[temperatura]" value="{{ $triage['temperatura'] ?? '' }}" placeholder="Ej. 36.5" class="{{ $input }}">
         </div>
         <div>
             <label class="{{ $label }}">Presión Sistólica</label>
@@ -702,31 +723,55 @@
             curp.addEventListener(ev, function (e) { e.preventDefault(); });
         });
 
-        // ===== Gineco según sexo (formulario y sidebar) =====
+        // ===== Gineco: siempre visible; gris/bloqueada para M/X hasta activarla; XOR embarazo-menstruación =====
         const seccionGineco = document.getElementById('seccion-gineco');
         const navGineco = document.getElementById('nav-gineco');
-
-        document.querySelectorAll('input[name="sexo"]').forEach(function (radio) {
-            radio.addEventListener('change', function () {
-                const esF = this.value === 'F';
-                if (seccionGineco) seccionGineco.classList.toggle('hidden', !esF);
-                if (navGineco) navGineco.classList.toggle('hidden', !esF);
-            });
-        });
-
-        // ===== Semanas de gestación según embarazo =====
+        const ginecoToggle = document.getElementById('gineco-toggle');
+        const ginecoActivo = document.getElementById('gineco-activo');
+        const ginecoCampos = document.getElementById('gineco-campos');
+        const ginecoNota = document.getElementById('gineco-nota');
         const selectEmbarazo = document.getElementById('select-embarazo');
+        const selectMenstruacion = document.getElementById('select-menstruacion');
         const inputSemanas = document.getElementById('input-semanas');
 
-        if (selectEmbarazo) {
-            selectEmbarazo.addEventListener('change', function () {
-                const embarazada = this.value === '1';
-                inputSemanas.disabled = !embarazada;
-                if (embarazada) inputSemanas.focus();
-                else inputSemanas.value = '';
-            });
-            selectEmbarazo.dispatchEvent(new Event('change'));
+        function sincronizarGineco() {
+            const sexo = document.querySelector('input[name="sexo"]:checked')?.value;
+            const esF = sexo === 'F';
+
+            ginecoToggle.hidden = esF;          // en F la sección siempre está activa
+            if (esF) ginecoActivo.checked = true;
+
+            const activo = ginecoActivo.checked;
+            ginecoCampos.disabled = !activo;
+            ginecoNota.hidden = activo;
+            seccionGineco.classList.toggle('opacity-60', !activo);
+            if (navGineco) {
+                navGineco.classList.remove('hidden');   // siempre visible en el navegador
+                navGineco.classList.toggle('opacity-50', !activo);
+            }
+
+            // Semanas solo con embarazo
+            const embarazada = selectEmbarazo.value === '1';
+            inputSemanas.disabled = !activo || !embarazada;
+            if (!embarazada) inputSemanas.value = '';
         }
+
+        // XOR: al activar uno, el otro se apaga
+        selectEmbarazo.addEventListener('change', function () {
+            if (this.value === '1') selectMenstruacion.value = '0';
+            sincronizarGineco();
+        });
+        selectMenstruacion.addEventListener('change', function () {
+            if (this.value === '1') {
+                selectEmbarazo.value = '0';
+            }
+            sincronizarGineco();
+        });
+        ginecoActivo.addEventListener('change', sincronizarGineco);
+        document.querySelectorAll('input[name="sexo"]').forEach(function (radio) {
+            radio.addEventListener('change', sincronizarGineco);
+        });
+        sincronizarGineco();
 
         // ===== Descripción de drogas =====
         const selectDrogas = document.getElementById('select-drogas');
