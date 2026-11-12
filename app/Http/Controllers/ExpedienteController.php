@@ -281,16 +281,16 @@ class ExpedienteController extends Controller
 
     private function guardarRelaciones(Paciente $paciente, array $data): void
     {
-        foreach ($c['telefonos'] ?? [] as $t) {
-            $contacto->telefonos()->create(['numero' => $t['numero'], 'tipo' => $t['tipo']]);
+        foreach ($data['telefonos'] ?? [] as $t) {
+            $paciente->telefonos()->create(['numero' => $t['numero'], 'tipo' => $t['tipo']]);
         }
         foreach ($data['correos'] ?? [] as $correo) {
             $paciente->correos()->create(['correo' => $correo]);
         }
         foreach ($data['contactos'] ?? [] as $c) {
             $contacto = $paciente->contactos()->create(Arr::only($c, ['nombres', 'apellido1', 'apellido2', 'parentesco']));
-            foreach ($c['telefonos'] ?? [] as $numero) {
-                $contacto->telefonos()->create(['numero' => $numero]);
+            foreach ($c['telefonos'] ?? [] as $t) {
+                $contacto->telefonos()->create(['numero' => $t['numero'], 'tipo' => $t['tipo']]);
             }
             foreach ($c['correos'] ?? [] as $correo) {
                 $contacto->correos()->create(['correo' => $correo]);
@@ -303,15 +303,36 @@ class ExpedienteController extends Controller
         Habito::create(array_merge(['folioExpediente' => $folio], $data['habitos']));
 
         if ($data['sexo'] === 'F') {
-            AntecedenteGinecoObstetrico::create(array_merge(['folioExpediente' => $folio], $data['gineco']));
+            AntecedenteGinecoObstetrico::create(array_merge(['folioExpediente' => $folio], $data['gineco'] ?? []));
         }
 
-        foreach ($data['antecedentes'] as $a) {
-            Antecedente::create(array_merge(['folioExpediente' => $folio], $a));
+        foreach ($data['antecedentes'] ?? [] as $a) {
+            Antecedente::create([
+                'folioExpediente' => $folio,
+                'tipo'            => $a['tipo'],
+                'nombre'          => $a['nombre'],
+                'descripcion'     => $a['descripcion'] ?? null,
+                'esFamiliar'      => (bool) ($a['esFamiliar'] ?? false),
+            ]);
         }
 
-        foreach ($data['alergias'] as $al) {
-            Alergia::create(array_merge(['folioExpediente' => $folio], $al));
+        foreach ($data['alergias'] ?? [] as $al) {
+            Alergia::create([
+                'folioExpediente' => $folio,
+                'sustancia'       => $al['sustancia'],
+                'reaccion'        => $al['reaccion'] ?? null,
+                'severidad'       => $al['severidad'],
+                'fechaAproximada' => \App\Http\Requests\ExpedienteRequest::aISO($al['fechaAproximada'] ?? null),
+            ]);
+        }
+
+        foreach ($data['noFarmacologicos'] ?? [] as $t) {
+            \App\Models\TratamientoNoFarmacologico::create([
+                'folioExpediente' => $folio,
+                'tipo'            => $t['tipo'],
+                'titulo'          => $t['titulo'],
+                'descripcion'     => $t['descripcion'] ?? null,
+            ]);
         }
     }
 

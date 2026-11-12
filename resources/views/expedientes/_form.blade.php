@@ -4,7 +4,7 @@
     $input  = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
     $select = 'w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
     $label  = 'block text-sm font-medium text-slate-700 mb-1';
-    $tipos = config('expediente.tipos_telefono');
+    $tipos  = config('expediente.tipos_telefono');
 
     $telefonos = old('telefonos', $p
         ? $p->telefonos->map(fn ($t) => ['numero' => $t->numero, 'tipo' => $t->tipo])->all()
@@ -21,13 +21,14 @@
             'apellido1'  => $c->apellido1,
             'apellido2'  => $c->apellido2,
             'parentesco' => $c->parentesco,
-            'telefonos'  => $c->telefonos->pluck('numero')->all(),
+            'telefonos'  => $c->telefonos->map(fn ($t) => ['numero' => $t->numero, 'tipo' => $t->tipo])->all(),
             'correos'    => $c->correos->pluck('correo')->all(),
         ])->all()
         : []);
 
-    $antecedentes = old('antecedentes', []);
-    $alergias     = old('alergias', []);
+    $antecedentes     = old('antecedentes', []);
+    $alergias         = old('alergias', []);
+    $noFarmacologicos = old('noFarmacologicos', []);
 
     $fechaNac = old('fechaNac', $p?->fechaNac?->format('d/m/Y'));
     $sexo     = old('sexo', $p?->sexo);
@@ -94,7 +95,7 @@
         @error('sexo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
         <div>
             <label for="ocupacion" class="{{ $label }}">Ocupación</label>
             <input type="text" id="ocupacion" name="ocupacion" value="{{ old('ocupacion', $p?->ocupacion) }}" maxlength="100"
@@ -111,9 +112,6 @@
             </select>
             @error('escolaridad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
         <div>
             <label for="servicioMedico" class="{{ $label }}">Servicio médico</label>
             <select id="servicioMedico" name="servicioMedico" class="{{ $input }} bg-white">
@@ -142,13 +140,13 @@
 <section id="sec-contacto" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
     <h3 class="text-lg font-semibold text-slate-900 mb-4">Contacto del paciente</h3>
 
-    <span class="{{ $label }}">Teléfonos * <span class="text-xs text-slate-400">(al menos uno)</span></span>
+    <span class="{{ $label }}">Teléfonos * <span class="text-xs text-slate-400">(al menos uno, 10 dígitos)</span></span>
     <div id="lista-telefonos" class="space-y-2">
         @foreach ($telefonos as $i => $t)
             <div class="fila flex items-center gap-2">
                 <input type="text" name="telefonos[{{ $i }}][numero]" value="{{ $t['numero'] ?? '' }}"
-                       placeholder="Número" maxlength="20" inputmode="tel" class="{{ $input }}">
-                <select name="telefonos[{{ $i }}][tipo]" class="{{ $select }}">
+                       placeholder="Número (10 dígitos)" maxlength="14" inputmode="tel" class="{{ $input }}">
+                <select name="telefonos[{{ $i }}][tipo]" class="{{ $select }} bg-white">
                     @foreach ($tipos as $tipo)
                         <option value="{{ $tipo }}" {{ ($t['tipo'] ?? '') === $tipo ? 'selected' : '' }}>{{ $tipo }}</option>
                     @endforeach
@@ -175,6 +173,7 @@
         </div>
         <button type="button" data-add="tpl-correo" data-target="#lista-correos"
                 class="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800">+ Agregar correo</button>
+        @error('correos.*') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
     </div>
 </section>
 
@@ -198,22 +197,45 @@
     @error('contactos.*.telefonos.*.numero') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 </section>
 
-{{-- ========== Antecedentes Clínicos (Enfermedades Previas) ========== --}}
+{{-- ========== Antecedentes Clínicos ========== --}}
 <section id="sec-antecedentes" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
     <h3 class="text-lg font-semibold text-slate-900 mb-4">Antecedentes Clínicos</h3>
-    <p class="text-sm text-slate-500 mb-4">Enfermedades crónicas, cirugías, traumatismos, etc.</p>
+    <p class="text-sm text-slate-500 mb-4">Quirúrgicos, enfermedades (de la lista oficial) u otros. Marca si es antecedente familiar.</p>
 
     <div id="lista-antecedentes" class="space-y-3">
         @foreach ($antecedentes as $i => $a)
             <div class="fila grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border-l-2 border-blue-400 pl-3 py-2">
-                <div class="sm:col-span-3">
-                    <input type="text" name="antecedentes[{{ $i }}][tipo]" value="{{ $a['tipo'] ?? '' }}" placeholder="Tipo (Ej. Quirúrgico)" maxlength="50" required class="{{ $input }}">
+                <div class="sm:col-span-2">
+                    <select name="antecedentes[{{ $i }}][tipo]" class="ant-tipo {{ $input }} bg-white" required>
+                        <option value="">Tipo...</option>
+                        @foreach (config('expediente.tipos_antecedente') as $tipoA)
+                            <option value="{{ $tipoA }}" {{ ($a['tipo'] ?? '') === $tipoA ? 'selected' : '' }}>{{ $tipoA }}</option>
+                        @endforeach
+                    </select>
                 </div>
-                <div class="sm:col-span-4">
-                    <input type="text" name="antecedentes[{{ $i }}][nombre]" value="{{ $a['nombre'] ?? '' }}" placeholder="Nombre / Diagnóstico" maxlength="100" required class="{{ $input }}">
+                <div class="sm:col-span-3 ant-enfermedad-wrap" hidden>
+                    <select name="antecedentes[{{ $i }}][enfermedad]" class="ant-enfermedad {{ $input }} bg-white">
+                        <option value="">Enfermedad...</option>
+                        @foreach (config('expediente.enfermedades') as $enf)
+                            <option value="{{ $enf }}" {{ ($a['enfermedad'] ?? '') === $enf ? 'selected' : '' }}>{{ $enf }}</option>
+                        @endforeach
+                        <option value="Otra" {{ ($a['enfermedad'] ?? '') === 'Otra' ? 'selected' : '' }}>Otra (detallar)</option>
+                    </select>
                 </div>
-                <div class="sm:col-span-4">
-                    <input type="text" name="antecedentes[{{ $i }}][descripcion]" value="{{ $a['descripcion'] ?? '' }}" placeholder="Descripción (opcional)" class="{{ $input }}">
+                <div class="sm:col-span-3 ant-nombre-wrap">
+                    <input type="text" name="antecedentes[{{ $i }}][nombre]" value="{{ $a['nombre'] ?? '' }}"
+                           placeholder="Nombre / Título" maxlength="100" class="ant-nombre {{ $input }}">
+                </div>
+                <div class="sm:col-span-2">
+                    <input type="text" name="antecedentes[{{ $i }}][descripcion]" value="{{ $a['descripcion'] ?? '' }}"
+                           placeholder="Descripción" class="{{ $input }}">
+                </div>
+                <div class="sm:col-span-1">
+                    <label class="inline-flex items-center gap-1 text-xs text-slate-600 mt-2 cursor-pointer">
+                        <input type="checkbox" name="antecedentes[{{ $i }}][esFamiliar]" value="1"
+                               {{ !empty($a['esFamiliar']) ? 'checked' : '' }} class="rounded border-slate-300 text-blue-600">
+                        Familiar
+                    </label>
                 </div>
                 <div class="sm:col-span-1 text-right">
                     <button type="button" data-remove=".fila" class="text-sm text-red-600 hover:text-red-800 mt-2">Quitar</button>
@@ -223,6 +245,9 @@
     </div>
     <button type="button" data-add="tpl-antecedente" data-target="#lista-antecedentes"
             class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800">+ Agregar antecedente</button>
+    @error('antecedentes.*.tipo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('antecedentes.*.enfermedad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('antecedentes.*.nombre') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 </section>
 
 {{-- ========== Alergias ========== --}}
@@ -232,18 +257,22 @@
     <div id="lista-alergias" class="space-y-3">
         @foreach ($alergias as $i => $al)
             <div class="fila grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border-l-2 border-red-400 pl-3 py-2">
-                <div class="sm:col-span-4">
+                <div class="sm:col-span-3">
                     <input type="text" name="alergias[{{ $i }}][sustancia]" value="{{ $al['sustancia'] ?? '' }}" placeholder="Sustancia o medicamento" maxlength="150" required class="{{ $input }}">
                 </div>
-                <div class="sm:col-span-4">
+                <div class="sm:col-span-3">
                     <input type="text" name="alergias[{{ $i }}][reaccion]" value="{{ $al['reaccion'] ?? '' }}" placeholder="Reacción presentada" class="{{ $input }}">
                 </div>
-                <div class="sm:col-span-3">
-                    <select name="alergias[{{ $i }}][severidad]" class="{{ $input }}">
-                        <option value="Leve" {{ ($al['severidad'] ?? '') === 'Leve' ? 'selected' : '' }}>Leve</option>
-                        <option value="Moderada" {{ ($al['severidad'] ?? '') === 'Moderada' ? 'selected' : '' }}>Moderada</option>
-                        <option value="Severa" {{ ($al['severidad'] ?? '') === 'Severa' ? 'selected' : '' }}>Severa</option>
+                <div class="sm:col-span-2">
+                    <select name="alergias[{{ $i }}][severidad]" class="{{ $input }} bg-white">
+                        @foreach (config('expediente.severidades_alergia') as $sev)
+                            <option value="{{ $sev }}" {{ ($al['severidad'] ?? '') === $sev ? 'selected' : '' }}>{{ $sev }}</option>
+                        @endforeach
                     </select>
+                </div>
+                <div class="sm:col-span-3">
+                    <input type="text" name="alergias[{{ $i }}][fechaAproximada]" value="{{ $al['fechaAproximada'] ?? '' }}"
+                           placeholder="¿Desde cuándo? DD/MM/AAAA" inputmode="numeric" maxlength="10" class="campo-fecha {{ $input }}">
                 </div>
                 <div class="sm:col-span-1 text-right">
                     <button type="button" data-remove=".fila" class="text-sm text-red-600 hover:text-red-800 mt-2">Quitar</button>
@@ -253,13 +282,16 @@
     </div>
     <button type="button" data-add="tpl-alergia" data-target="#lista-alergias"
             class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800">+ Agregar alergia</button>
+    @error('alergias.*.sustancia') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('alergias.*.severidad') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('alergias.*.fechaAproximada') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 </section>
 
 {{-- ========== Hábitos y Estilo de Vida ========== --}}
 <section id="sec-habitos" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
     <h3 class="text-lg font-semibold text-slate-900 mb-4">Hábitos y Estilo de Vida</h3>
     @php
-        $frecuencias = ['Nunca', 'Rara vez', 'Ocasionalmente', 'Con frecuencia', 'Diario'];
+        $frecuencias = config('expediente.frecuencias_habito');
         $habitos = old('habitos', []);
     @endphp
 
@@ -281,6 +313,14 @@
             </select>
         </div>
         <div>
+            <label class="{{ $label }}">Té / café (cafeína)</label>
+            <select name="habitos[frecuenciaCafeina]" class="{{ $input }}">
+                @foreach($frecuencias as $f)
+                    <option value="{{ $f }}" {{ ($habitos['frecuenciaCafeina'] ?? 'Nunca') === $f ? 'selected' : '' }}>{{ $f }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
             <label class="{{ $label }}">Actividad Física</label>
             <select name="habitos[frecuenciaActFisica]" class="{{ $input }}">
                 @foreach($frecuencias as $f)
@@ -296,17 +336,54 @@
                 @endforeach
             </select>
         </div>
-        <div class="sm:col-span-2">
+        <div>
+            <label class="{{ $label }}">Horas de sueño promedio</label>
+            <input type="number" name="habitos[horaSueno]" value="{{ $habitos['horaSueno'] ?? '' }}" min="0" max="24" placeholder="Ej. 8" class="{{ $input }}">
+        </div>
+        <div class="sm:col-span-3">
             <label class="{{ $label }}">Descripción de drogas consumidas</label>
             <input type="text" name="habitos[descripcionDrogas]" id="desc-drogas" value="{{ $habitos['descripcionDrogas'] ?? '' }}"
                    {{ ($habitos['frecuenciaDrogas'] ?? 'Nunca') === 'Nunca' ? 'disabled' : '' }}
                    placeholder="Especificar sustancias..." class="{{ $input }} disabled:bg-slate-100 disabled:cursor-not-allowed">
         </div>
-        <div>
-            <label class="{{ $label }}">Horas de sueño promedio</label>
-            <input type="number" name="habitos[horaSueno]" value="{{ $habitos['horaSueno'] ?? '' }}" min="0" max="24" placeholder="Ej. 8" class="{{ $input }}">
-        </div>
     </div>
+    @error('habitos.frecuenciaCafeina') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+</section>
+
+{{-- ========== Tratamientos no farmacológicos ========== --}}
+<section id="sec-nofarma" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6">
+    <h3 class="text-lg font-semibold text-slate-900 mb-1">Tratamientos no farmacológicos</h3>
+    <p class="text-sm text-slate-500 mb-4">Tés, remedios herbolarios, homeopatía, terapias alternativas (RF-01).</p>
+
+    <div id="lista-nofarma" class="space-y-3">
+        @foreach ($noFarmacologicos as $i => $t)
+            <div class="fila grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border-l-2 border-emerald-400 pl-3 py-2">
+                <div class="sm:col-span-3">
+                    <select name="noFarmacologicos[{{ $i }}][tipo]" class="{{ $input }} bg-white" required>
+                        <option value="">Tipo...</option>
+                        @foreach (config('expediente.tipos_no_farmacologico') as $tipoT)
+                            <option value="{{ $tipoT }}" {{ ($t['tipo'] ?? '') === $tipoT ? 'selected' : '' }}>{{ $tipoT }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="sm:col-span-4">
+                    <input type="text" name="noFarmacologicos[{{ $i }}][titulo]" value="{{ $t['titulo'] ?? '' }}"
+                           placeholder="Título (Ej. Té de manzanilla)" maxlength="150" class="{{ $input }}">
+                </div>
+                <div class="sm:col-span-4">
+                    <input type="text" name="noFarmacologicos[{{ $i }}][descripcion]" value="{{ $t['descripcion'] ?? '' }}"
+                           placeholder="Descripción (frecuencia, para qué lo usa...)" class="{{ $input }}">
+                </div>
+                <div class="sm:col-span-1 text-right">
+                    <button type="button" data-remove=".fila" class="text-sm text-red-600 hover:text-red-800 mt-2">Quitar</button>
+                </div>
+            </div>
+        @endforeach
+    </div>
+    <button type="button" data-add="tpl-nofarma" data-target="#lista-nofarma"
+            class="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800">+ Agregar tratamiento</button>
+    @error('noFarmacologicos.*.tipo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+    @error('noFarmacologicos.*.titulo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 </section>
 
 {{-- ========== Antecedentes Ginecoobstétricos (Oculto por defecto) ========== --}}
@@ -402,7 +479,6 @@
 </div>
 
 {{-- ========== Plantillas para filas dinámicas ========== --}}
-{{-- ========== Plantillas para filas dinámicas ========== --}}
 <template id="tpl-telefono">
     <div class="fila flex items-center gap-2">
         <input type="text" name="telefonos[__I__][numero]" placeholder="Número (10 dígitos)" maxlength="14" inputmode="tel" class="{{ $input }}">
@@ -447,14 +523,34 @@
 
 <template id="tpl-antecedente">
     <div class="fila grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border-l-2 border-blue-400 pl-3 py-2">
-        <div class="sm:col-span-3">
-            <input type="text" name="antecedentes[__I__][tipo]" placeholder="Tipo (Ej. Quirúrgico)" maxlength="50" required class="{{ $input }}">
+        <div class="sm:col-span-2">
+            <select name="antecedentes[__I__][tipo]" class="ant-tipo {{ $input }} bg-white" required>
+                <option value="">Tipo...</option>
+                @foreach (config('expediente.tipos_antecedente') as $tipoA)
+                    <option value="{{ $tipoA }}">{{ $tipoA }}</option>
+                @endforeach
+            </select>
         </div>
-        <div class="sm:col-span-4">
-            <input type="text" name="antecedentes[__I__][nombre]" placeholder="Nombre / Diagnóstico" maxlength="100" required class="{{ $input }}">
+        <div class="sm:col-span-3 ant-enfermedad-wrap" hidden>
+            <select name="antecedentes[__I__][enfermedad]" class="ant-enfermedad {{ $input }} bg-white">
+                <option value="">Enfermedad...</option>
+                @foreach (config('expediente.enfermedades') as $enf)
+                    <option value="{{ $enf }}">{{ $enf }}</option>
+                @endforeach
+                <option value="Otra">Otra (detallar)</option>
+            </select>
         </div>
-        <div class="sm:col-span-4">
-            <input type="text" name="antecedentes[__I__][descripcion]" placeholder="Descripción (opcional)" class="{{ $input }}">
+        <div class="sm:col-span-3 ant-nombre-wrap">
+            <input type="text" name="antecedentes[__I__][nombre]" placeholder="Nombre / Título" maxlength="100" class="ant-nombre {{ $input }}">
+        </div>
+        <div class="sm:col-span-2">
+            <input type="text" name="antecedentes[__I__][descripcion]" placeholder="Descripción" class="{{ $input }}">
+        </div>
+        <div class="sm:col-span-1">
+            <label class="inline-flex items-center gap-1 text-xs text-slate-600 mt-2 cursor-pointer">
+                <input type="checkbox" name="antecedentes[__I__][esFamiliar]" value="1" class="rounded border-slate-300 text-blue-600">
+                Familiar
+            </label>
         </div>
         <div class="sm:col-span-1 text-right">
             <button type="button" data-remove=".fila" class="text-sm text-red-600 hover:text-red-800 mt-2">Quitar</button>
@@ -464,18 +560,43 @@
 
 <template id="tpl-alergia">
     <div class="fila grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border-l-2 border-red-400 pl-3 py-2">
-        <div class="sm:col-span-4">
+        <div class="sm:col-span-3">
             <input type="text" name="alergias[__I__][sustancia]" placeholder="Sustancia o medicamento" maxlength="150" required class="{{ $input }}">
         </div>
-        <div class="sm:col-span-4">
+        <div class="sm:col-span-3">
             <input type="text" name="alergias[__I__][reaccion]" placeholder="Reacción presentada" class="{{ $input }}">
         </div>
-        <div class="sm:col-span-3">
-            <select name="alergias[__I__][severidad]" class="{{ $input }}">
-                <option value="Leve">Leve</option>
-                <option value="Moderada">Moderada</option>
-                <option value="Severa">Severa</option>
+        <div class="sm:col-span-2">
+            <select name="alergias[__I__][severidad]" class="{{ $input }} bg-white">
+                @foreach (config('expediente.severidades_alergia') as $sev)
+                    <option value="{{ $sev }}">{{ $sev }}</option>
+                @endforeach
             </select>
+        </div>
+        <div class="sm:col-span-3">
+            <input type="text" name="alergias[__I__][fechaAproximada]" placeholder="¿Desde cuándo? DD/MM/AAAA" inputmode="numeric" maxlength="10" class="campo-fecha {{ $input }}">
+        </div>
+        <div class="sm:col-span-1 text-right">
+            <button type="button" data-remove=".fila" class="text-sm text-red-600 hover:text-red-800 mt-2">Quitar</button>
+        </div>
+    </div>
+</template>
+
+<template id="tpl-nofarma">
+    <div class="fila grid grid-cols-1 sm:grid-cols-12 gap-2 items-start border-l-2 border-emerald-400 pl-3 py-2">
+        <div class="sm:col-span-3">
+            <select name="noFarmacologicos[__I__][tipo]" class="{{ $input }} bg-white" required>
+                <option value="">Tipo...</option>
+                @foreach (config('expediente.tipos_no_farmacologico') as $tipoT)
+                    <option value="{{ $tipoT }}">{{ $tipoT }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="sm:col-span-4">
+            <input type="text" name="noFarmacologicos[__I__][titulo]" placeholder="Título (Ej. Té de manzanilla)" maxlength="150" class="{{ $input }}">
+        </div>
+        <div class="sm:col-span-4">
+            <input type="text" name="noFarmacologicos[__I__][descripcion]" placeholder="Descripción (frecuencia, para qué lo usa...)" class="{{ $input }}">
         </div>
         <div class="sm:col-span-1 text-right">
             <button type="button" data-remove=".fila" class="text-sm text-red-600 hover:text-red-800 mt-2">Quitar</button>
@@ -528,7 +649,41 @@
             }
         });
 
-        // ===== Fecha con máscara DD/MM/AAAA =====
+        // ===== Fechas DD/MM/AAAA en filas dinámicas (alergias) =====
+        document.addEventListener('input', function (e) {
+            if (!e.target.classList.contains('campo-fecha')) return;
+            const d = e.target.value.replace(/\D/g, '').slice(0, 8);
+            let out = d;
+            if (d.length > 4)      out = d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4);
+            else if (d.length > 2) out = d.slice(0, 2) + '/' + d.slice(2);
+            e.target.value = out;
+        });
+
+        // ===== Antecedentes: lista de enfermedades vs. título libre =====
+        function sincronizarAntecedente(fila) {
+            const tipo = fila.querySelector('.ant-tipo').value;
+            const enfWrap = fila.querySelector('.ant-enfermedad-wrap');
+            const enf = fila.querySelector('.ant-enfermedad');
+            const nombreWrap = fila.querySelector('.ant-nombre-wrap');
+            const nombre = fila.querySelector('.ant-nombre');
+
+            const esEnfermedad = tipo === 'Enfermedad';
+            enfWrap.hidden = !esEnfermedad;
+            if (!esEnfermedad) enf.value = '';
+
+            const otra = esEnfermedad && enf.value === 'Otra';
+            nombreWrap.hidden = esEnfermedad && !otra;   // la lista pone el nombre; "Otra" lo pide
+            nombre.placeholder = otra ? '¿Cuál enfermedad? (detalle)' : 'Nombre / Título';
+            if (esEnfermedad && !otra) nombre.value = '';
+        }
+        document.addEventListener('change', function (e) {
+            if (e.target.classList.contains('ant-tipo') || e.target.classList.contains('ant-enfermedad')) {
+                sincronizarAntecedente(e.target.closest('.fila'));
+            }
+        });
+        document.querySelectorAll('#lista-antecedentes .fila').forEach(sincronizarAntecedente);
+
+        // ===== Fecha de nacimiento con máscara DD/MM/AAAA =====
         const fecha = document.getElementById('fechaNac');
         fecha.addEventListener('input', function () {
             const d = fecha.value.replace(/\D/g, '').slice(0, 8);
@@ -577,12 +732,14 @@
         const selectDrogas = document.getElementById('select-drogas');
         const descDrogas = document.getElementById('desc-drogas');
 
-        selectDrogas.addEventListener('change', function () {
-            const consume = this.value !== 'Nunca';
-            descDrogas.disabled = !consume;
-            if (consume) descDrogas.focus();
-            else descDrogas.value = '';
-        });
+        if (selectDrogas && descDrogas) {
+            selectDrogas.addEventListener('change', function () {
+                const consume = this.value !== 'Nunca';
+                descDrogas.disabled = !consume;
+                if (consume) descDrogas.focus();
+                else descDrogas.value = '';
+            });
+        }
 
         // ===== Cálculo automático del IMC =====
         const inputPeso = document.getElementById('peso');

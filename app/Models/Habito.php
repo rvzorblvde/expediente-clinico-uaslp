@@ -12,6 +12,7 @@ class Habito extends Model
 
     protected $fillable = [
         'folioExpediente', 'frecuenciaTabaquismo', 'frecuenciaAlcoholismo',
-        'frecuenciaDrogas', 'descripcionDrogas', 'horaSueno', 'frecuenciaActFisica'
+        'frecuenciaDrogas', 'frecuenciaCafeina',
+        'descripcionDrogas', 'horaSueno', 'frecuenciaActFisica'
     ];
 }
