@@ -1,8 +1,9 @@
 @php
     $c = $c ?? [];
-    $tels = $c['telefonos'] ?? [];
+    $tels = collect($c['telefonos'] ?? [])
+        ->map(fn ($t) => is_array($t) ? $t : ['numero' => $t, 'tipo' => ''])->all();
     if (empty($tels)) {
-        $tels = [''];
+        $tels = [['numero' => '', 'tipo' => '']];
     }
     $cors = $c['correos'] ?? [];
 @endphp
@@ -28,16 +29,27 @@
         </div>
         <div>
             <label class="{{ $label }}">Parentesco *</label>
-            <input type="text" name="contactos[{{ $i }}][parentesco]" value="{{ $c['parentesco'] ?? '' }}" maxlength="50" class="{{ $input }}">
+            <select name="contactos[{{ $i }}][parentesco]" class="{{ $input }} bg-white">
+                <option value="">Selecciona...</option>
+                @foreach (config('expediente.parentescos') as $par)
+                    <option value="{{ $par }}" {{ ($c['parentesco'] ?? '') === $par ? 'selected' : '' }}>{{ $par }}</option>
+                @endforeach
+            </select>
         </div>
     </div>
 
     <div>
-        <span class="{{ $label }}">Teléfonos</span>
+        <span class="{{ $label }}">Teléfonos * <span class="text-xs text-slate-400">(al menos uno, 10 dígitos)</span></span>
         <div class="lista-ctel space-y-2">
-            @foreach ($tels as $numero)
+            @foreach ($tels as $j => $t)
                 <div class="fila flex items-center gap-2">
-                    <input type="text" name="contactos[{{ $i }}][telefonos][]" value="{{ $numero }}" placeholder="Número" maxlength="20" inputmode="tel" class="{{ $input }}">
+                    <input type="text" name="contactos[{{ $i }}][telefonos][{{ $j }}][numero]" value="{{ $t['numero'] ?? '' }}"
+                           placeholder="Número (10 dígitos)" maxlength="14" inputmode="tel" class="{{ $input }}">
+                    <select name="contactos[{{ $i }}][telefonos][{{ $j }}][tipo]" class="{{ $select }} bg-white">
+                        @foreach (config('expediente.tipos_telefono') as $tipo)
+                            <option value="{{ $tipo }}" {{ ($t['tipo'] ?? '') === $tipo ? 'selected' : '' }}>{{ $tipo }}</option>
+                        @endforeach
+                    </select>
                     <button type="button" data-remove=".fila" class="px-2 text-sm text-red-600 hover:text-red-800">Quitar</button>
                 </div>
             @endforeach

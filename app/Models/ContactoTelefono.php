@@ -10,5 +10,5 @@ class ContactoTelefono extends Model
     protected $primaryKey = 'idTelefonoContacto';
     public $timestamps = false;
 
-    protected $fillable = ['idContacto', 'numero'];
+    protected $fillable = ['idContacto', 'numero', 'tipo'];
 }

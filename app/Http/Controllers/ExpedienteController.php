@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Models\Auditoria;
+use App\Http\Requests\ExpedienteRequest;
 
 class ExpedienteController extends Controller
 {
@@ -75,9 +76,9 @@ class ExpedienteController extends Controller
         return view('expedientes.create');
     }
 
-    public function store(Request $request)
+    public function store(ExpedienteRequest $request)
     {
-        $data = $this->validar($request);
+        $data = $request->validated();
 
         $expediente = DB::transaction(function () use ($data) {
             // 1. Crear paciente y contactos
@@ -113,10 +114,10 @@ class ExpedienteController extends Controller
         return view('expedientes.edit', compact('expediente'));
     }
 
-    public function update(Request $request, Expediente $expediente)
+    public function update(ExpedienteRequest $request, Expediente $expediente)
     {
         $paciente = $expediente->paciente;
-        $data = $this->validar($request, $paciente);
+        $data = $request->validated();
 
         // Cargamos las relaciones para capturar el estado original antes de borrar y recrear (para logs)
         if ($paciente) {
@@ -139,7 +140,7 @@ class ExpedienteController extends Controller
                 'apellido1'  => trim((string) $c->apellido1),
                 'apellido2'  => trim((string) ($c->apellido2 ?? '')),
                 'parentesco' => trim((string) $c->parentesco),
-                'telefonos'  => $c->telefonos->pluck('numero')->map(fn ($n) => trim((string) $n))->values()->all(),
+                'telefonos'  => $c->telefonos->map(fn ($t) => ['numero' => trim((string) $t->numero), 'tipo' => trim((string) ($t->tipo ?? ''))])->values()->all(),
                 'correos'    => $c->correos->pluck('correo')->map(fn ($e) => trim((string) $e))->values()->all(),
             ];
         })->values()->all() : [];
@@ -224,7 +225,7 @@ class ExpedienteController extends Controller
                     'apellido1'  => trim((string) ($c['apellido1'] ?? '')),
                     'apellido2'  => trim((string) ($c['apellido2'] ?? '')),
                     'parentesco' => trim((string) ($c['parentesco'] ?? '')),
-                    'telefonos'  => collect($c['telefonos'] ?? [])->map(fn ($n) => trim((string) $n))->values()->all(),
+                    'telefonos'  => collect($c['telefonos'] ?? [])->map(fn ($t) => ['numero' => trim((string) ($t['numero'] ?? '')), 'tipo' => trim((string) ($t['tipo'] ?? ''))])->values()->all(),
                     'correos'    => collect($c['correos'] ?? [])->map(fn ($e) => trim((string) $e))->values()->all(),
                 ];
             })->values()->all();
@@ -265,101 +266,23 @@ class ExpedienteController extends Controller
             ->with('success', "Expediente {$expediente->folioExpediente} actualizado.");
     }
 
-// ---------- Auxiliares ----------
+    // ---------- Auxiliares ----------
 
-    private function validar(Request $request, ?Paciente $paciente = null): array
-    {
-        $request->merge([
-            'curp'      => strtoupper(trim((string) $request->input('curp'))),
-            'telefonos' => collect($request->input('telefonos', []))->filter(fn ($t) => filled($t['numero'] ?? null))->values()->all(),
-            'correos'   => collect($request->input('correos', []))->filter()->values()->all(),
-            'contactos' => collect($request->input('contactos', []))
-                ->map(function ($c) {
-                    $c['telefonos'] = collect($c['telefonos'] ?? [])->filter()->values()->all();
-                    $c['correos']   = collect($c['correos'] ?? [])->filter()->values()->all();
-                    return $c;
-                })
-                ->filter(fn ($c) => filled($c['nombres'] ?? null) || filled($c['apellido1'] ?? null) || filled($c['apellido2'] ?? null) || filled($c['parentesco'] ?? null) || $c['telefonos'] || $c['correos'])
-                ->values()->all(),
 
-            // Limpieza de datos clínicos
-            'antecedentes' => collect($request->input('antecedentes', []))->filter(fn ($a) => filled($a['nombre'] ?? null))->values()->all(),
-            'alergias'     => collect($request->input('alergias', []))->filter(fn ($a) => filled($a['sustancia'] ?? null))->values()->all(),
-            'triage'       => collect($request->input('triage', []))->filter(fn ($val) => filled($val))->all(),
-        ]);
 
-        $telefono = ['string', 'max:20', 'regex:/^[0-9+\-\s()]{7,20}$/'];
-        $frecuencias = 'in:Nunca,Rara vez,Ocasionalmente,Con frecuencia,Diario';
-
-        return $request->validate([
-            'nombres'          => ['required', 'string', 'max:100'],
-            'apellido1'        => ['required', 'string', 'max:100'],
-            'apellido2'        => ['nullable', 'string', 'max:100'],
-            'fechaNac'         => ['required', 'date_format:d/m/Y', 'before_or_equal:' . now()->format('d/m/Y')],
-            'curp'             => [
-                'required', 'size:18', 'regex:/^[A-Z]{4}\d{6}[HMX][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/',
-                Rule::unique('pacientes', 'curp')->ignore($paciente?->idPaciente, 'idPaciente'),
-            ],
-            'sexo'             => ['required', 'in:M,F,X'],
-            'lugarProcedencia' => ['nullable', 'string', 'max:255'],
-            'lugarResidencia'  => ['nullable', 'string', 'max:255'],
-
-            'telefonos'          => ['required', 'array', 'min:1'],
-            'telefonos.*.numero' => ['required', ...$telefono],
-            'telefonos.*.tipo'   => ['nullable', 'string', 'max:50'],
-            'correos.*'          => ['email', 'max:255'],
-
-            'contactos.*.nombres'    => ['required', 'string', 'max:100'],
-            'contactos.*.apellido1'  => ['required', 'string', 'max:100'],
-            'contactos.*.apellido2'  => ['nullable', 'string', 'max:100'],
-            'contactos.*.parentesco' => ['required', 'string', 'max:50'],
-            'contactos.*.telefonos.*'=> $telefono,
-            'contactos.*.correos.*'  => ['email', 'max:255'],
-
-            // Validaciones Clínicas
-            'antecedentes.*.tipo'        => ['required', 'string', 'max:50'],
-            'antecedentes.*.nombre'      => ['required', 'string', 'max:100'],
-            'antecedentes.*.descripcion' => ['nullable', 'string'],
-
-            'alergias.*.sustancia' => ['required', 'string', 'max:150'],
-            'alergias.*.reaccion'  => ['nullable', 'string'],
-            'alergias.*.severidad' => ['required', 'in:Leve,Moderada,Severa'],
-
-            'habitos.frecuenciaTabaquismo'  => ['required', $frecuencias],
-            'habitos.frecuenciaAlcoholismo' => ['required', $frecuencias],
-            'habitos.frecuenciaActFisica'   => ['required', $frecuencias],
-            'habitos.frecuenciaDrogas'      => ['required', $frecuencias],
-            'habitos.descripcionDrogas'     => ['nullable', 'string', 'max:255'],
-            'habitos.horaSueno'             => ['nullable', 'integer', 'min:0', 'max:24'],
-
-            'gineco.embarazoActual'    => ['nullable', 'boolean'],
-            'gineco.semanasGestacion'  => ['nullable', 'integer', 'min:0', 'max:42'],
-            'gineco.menstruacion'      => ['nullable', 'boolean'],
-            'gineco.lactancia'         => ['nullable', 'boolean'],
-            'gineco.observaciones'     => ['nullable', 'string'],
-
-            // Defensa en profundidad: Bloquea pesos negativos, presiones imposibles, etc.
-            'triage.peso'                   => ['nullable', 'numeric', 'min:0.5', 'max:400'],
-            'triage.talla'                  => ['nullable', 'numeric', 'min:0.3', 'max:2.5'],
-            'triage.saturacionOxigeno'      => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'triage.presionSistolica'       => ['nullable', 'integer', 'min:0', 'max:300'],
-            'triage.presionDiastolica'      => ['nullable', 'integer', 'min:0', 'max:200'],
-            'triage.pulsoPpm'               => ['nullable', 'integer', 'min:0', 'max:300'],
-            'triage.frecuenciaRespiratoria' => ['nullable', 'integer', 'min:0', 'max:100'],
-        ]);
-    }
 
     private function datosPaciente(array $data): array
     {
-        $paciente = Arr::only($data, ['nombres', 'apellido1', 'apellido2', 'curp', 'sexo', 'lugarProcedencia', 'lugarResidencia']);
+        $paciente = Arr::only($data, ['nombres', 'apellido1', 'apellido2', 'curp', 'sexo',
+            'ocupacion', 'escolaridad', 'servicioMedico', 'lugarProcedencia', 'lugarResidencia']);
         $paciente['fechaNac'] = Carbon::createFromFormat('d/m/Y', $data['fechaNac'])->format('Y-m-d');
         return $paciente;
     }
 
     private function guardarRelaciones(Paciente $paciente, array $data): void
     {
-        foreach ($data['telefonos'] as $t) {
-            $paciente->telefonos()->create(['numero' => $t['numero'], 'tipo' => $t['tipo'] ?? null]);
+        foreach ($c['telefonos'] ?? [] as $t) {
+            $contacto->telefonos()->create(['numero' => $t['numero'], 'tipo' => $t['tipo']]);
         }
         foreach ($data['correos'] ?? [] as $correo) {
             $paciente->correos()->create(['correo' => $correo]);
