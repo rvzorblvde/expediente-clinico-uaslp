@@ -10,5 +10,5 @@ class Antecedente extends Model
     protected $primaryKey = 'idAntecedente';
     public $timestamps = false;
 
-    protected $fillable = ['folioExpediente', 'tipo', 'nombre', 'descripcion'];
+    protected $fillable = ['folioExpediente', 'tipo', 'nombre', 'descripcion', 'esFamiliar'];
 }

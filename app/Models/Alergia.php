@@ -10,5 +10,5 @@ class Alergia extends Model
     protected $primaryKey = 'idAlergia';
     public $timestamps = false;
 
-    protected $fillable = ['folioExpediente', 'sustancia', 'reaccion', 'severidad'];
+    protected $fillable = ['folioExpediente', 'sustancia', 'reaccion', 'severidad', 'fechaAproximada'];
 }

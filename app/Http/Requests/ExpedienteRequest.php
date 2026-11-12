@@ -47,7 +47,18 @@ class ExpedienteRequest extends FormRequest
                 ->values()->all(),
 
             // Limpieza de datos clínicos (igual que antes)
-            'antecedentes' => collect($this->input('antecedentes', []))->filter(fn ($a) => filled($a['nombre'] ?? null))->values()->all(),
+            'antecedentes' => collect($this->input('antecedentes', []))
+                ->map(function ($a) {
+                    // Si eligió una enfermedad de la lista, esa es el nombre del antecedente
+                    if (($a['tipo'] ?? '') === 'Enfermedad' && filled($a['enfermedad'] ?? null) && $a['enfermedad'] !== 'Otra') {
+                        $a['nombre'] = $a['enfermedad'];
+                    }
+                    return $a;
+                })
+                ->filter(fn ($a) => filled($a['nombre'] ?? null) || filled($a['enfermedad'] ?? null))
+                ->values()->all(),
+
+            'noFarmacologicos' => collect($this->input('noFarmacologicos', []))->filter(fn ($t) => filled($t['titulo'] ?? null))->values()->all(),
             'alergias'     => collect($this->input('alergias', []))->filter(fn ($a) => filled($a['sustancia'] ?? null))->values()->all(),
             'triage'       => collect($this->input('triage', []))->filter(fn ($val) => filled($val))->all(),
         ]);
@@ -94,21 +105,31 @@ class ExpedienteRequest extends FormRequest
             'contactos.*.telefonos.*.tipo'   => ['required', $tiposTel],
             'contactos.*.correos.*'          => ['email', 'max:255'],
 
-            // --- Clínico (igual que antes; se endurece en la etapa 2) ---
-            'antecedentes.*.tipo'        => ['required', 'string', 'max:50'],
-            'antecedentes.*.nombre'      => ['required', 'string', 'max:100'],
-            'antecedentes.*.descripcion' => ['nullable', 'string'],
+            'antecedentes'               => ['nullable', 'array', 'max:20'],
+            'antecedentes.*.tipo'        => ['required', Rule::in(config('expediente.tipos_antecedente'))],
+            'antecedentes.*.enfermedad'  => ['nullable', Rule::in([...config('expediente.enfermedades'), 'Otra'])],
+            'antecedentes.*.nombre'      => ['required', 'string', 'min:2', 'max:100'],
+            'antecedentes.*.descripcion' => ['nullable', 'string', 'max:2000'],
+            'antecedentes.*.esFamiliar'  => ['nullable', 'boolean'],
 
-            'alergias.*.sustancia' => ['required', 'string', 'max:150'],
-            'alergias.*.reaccion'  => ['nullable', 'string'],
-            'alergias.*.severidad' => ['required', 'in:Leve,Moderada,Severa'],
+            'alergias'                   => ['nullable', 'array', 'max:20'],
+            'alergias.*.sustancia'       => ['required', 'string', 'min:2', 'max:150'],
+            'alergias.*.reaccion'        => ['nullable', 'string', 'max:1000'],
+            'alergias.*.severidad'       => ['required', Rule::in(config('expediente.severidades_alergia'))],
+            'alergias.*.fechaAproximada' => ['nullable', 'date_format:d/m/Y'],
 
             'habitos.frecuenciaTabaquismo'  => ['required', $frecuencias],
             'habitos.frecuenciaAlcoholismo' => ['required', $frecuencias],
+            'habitos.frecuenciaCafeina'     => ['required', $frecuencias],
             'habitos.frecuenciaActFisica'   => ['required', $frecuencias],
             'habitos.frecuenciaDrogas'      => ['required', $frecuencias],
             'habitos.descripcionDrogas'     => ['nullable', 'string', 'max:255'],
             'habitos.horaSueno'             => ['nullable', 'integer', 'min:0', 'max:24'],
+
+            'noFarmacologicos'               => ['nullable', 'array', 'max:20'],
+            'noFarmacologicos.*.tipo'        => ['required', Rule::in(config('expediente.tipos_no_farmacologico'))],
+            'noFarmacologicos.*.titulo'      => ['required', 'string', 'min:2', 'max:150'],
+            'noFarmacologicos.*.descripcion' => ['nullable', 'string', 'max:2000'],
 
             'gineco.embarazoActual'   => ['nullable', 'boolean'],
             'gineco.semanasGestacion' => ['nullable', 'integer', 'min:0', 'max:42'],
@@ -139,6 +160,8 @@ class ExpedienteRequest extends FormRequest
             'telefonos.required'     => 'Registra al menos un teléfono del paciente.',
             'telefonos.*.tipo.required' => 'Indica si el teléfono es celular o fijo.',
             'contactos.*.telefonos.required' => 'Cada contacto de emergencia necesita al menos un teléfono.',
+            'antecedentes.*.nombre.required' => 'Detalla el nombre o título del antecedente (en "Otra", escribe cuál enfermedad).',
+            'noFarmacologicos.*.titulo.required' => 'Cada tratamiento no farmacológico necesita un título.'
         ];
     }
 
@@ -146,11 +169,16 @@ class ExpedienteRequest extends FormRequest
     {
         return [
             'fechaNac'       => 'fecha de nacimiento',
-            'telefonoMedico' => 'teléfono del médico',
             'telefonos.*.numero' => 'teléfono del paciente',
             'contactos.*.telefonos.*.numero' => 'teléfono del contacto',
             'contactos.*.parentesco' => 'parentesco',
         ];
+    }
+
+    /** Convierte DD/MM/AAAA a AAAA-MM-DD. */
+    public static function aISO(?string $fecha): ?string
+    {
+        return blank($fecha) ? null : Carbon::createFromFormat('d/m/Y', $fecha)->format('Y-m-d');
     }
 
     public function after(): array
@@ -173,6 +201,21 @@ class ExpedienteRequest extends FormRequest
             $esperado = ['M' => 'H', 'F' => 'M'][$this->input('sexo')] ?? null;
             if ($esperado && $sexoCurp !== 'X' && $sexoCurp !== $esperado) {
                 $v->errors()->add('curp', 'El sexo dentro del CURP (' . $sexoCurp . ') no coincide con el sexo seleccionado.');
+            }
+
+            // Antecedentes tipo Enfermedad: deben venir de la lista o detallar "Otra"
+            foreach ($this->input('antecedentes', []) as $i => $a) {
+                if (($a['tipo'] ?? '') === 'Enfermedad' && blank($a['enfermedad'] ?? null)) {
+                    $v->errors()->add("antecedentes.{$i}.enfermedad", 'En el antecedente ' . ($i + 1) . ', elige la enfermedad de la lista (u "Otra" para detallarla).');
+                }
+            }
+
+            // Fecha aproximada de alergias: no futura
+            foreach ($this->input('alergias', []) as $i => $al) {
+                if (filled($al['fechaAproximada'] ?? null)
+                    && Carbon::createFromFormat('d/m/Y', $al['fechaAproximada'])->isAfter(today())) {
+                    $v->errors()->add("alergias.{$i}.fechaAproximada", 'La fecha de la alergia ' . ($i + 1) . ' no puede ser futura.');
+                }
             }
         }];
     }
