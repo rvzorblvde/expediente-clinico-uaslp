@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Farmacovigilancia;
-use App\Models\MedicamentoConcomitante;
+use App\Http\Requests\FarmacovigilanciaRequest;
 use App\Models\Auditoria;
-use Illuminate\Http\Request;
+use App\Models\Expediente;
+use App\Models\Farmacovigilancia;
+use App\Models\Medicamento;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 
 class FarmacovigilanciaController extends Controller
 {
@@ -18,99 +21,23 @@ class FarmacovigilanciaController extends Controller
 
     public function create()
     {
-        // Aquí puedes mandar los pacientes si los necesitas en un select
-        return view('farmacovigilancia.create');
+        return view('farmacovigilancia.create', $this->catalogos());
     }
 
-    public function store(Request $request)
+    public function store(FarmacovigilanciaRequest $request)
     {
-        $validated = $request->validate([
-            'paciente_id' => 'required|integer',
-            'medicamento_sospechoso' => 'required|string|max:255',
-            'descripcion_reaccion' => 'required|string',
-            'fecha_inicio_reaccion' => 'nullable|date',
-            'iniciales' => 'nullable|string|max:10',
-            'sexo_biologico' => 'nullable|string',
-            'peso_kg' => 'nullable|numeric',
-            'pais_ocurrencia' => 'nullable|string',
-            'resultado_reaccion' => 'nullable|string',
-            'via_administracion' => 'nullable|string',
-            'accion_tomada' => 'nullable|string',
-            'notificador_profesion' => 'nullable|string',
-            'notificador_correo' => 'nullable|email',
-        ]);
+        $reporte = retry(3, function () use ($request) {
+            return DB::transaction(function () use ($request) {
+                $reporte = Farmacovigilancia::create(
+                    $this->datosReporte($request) + ['folio' => Farmacovigilancia::generarFolio()]
+                );
+                $this->guardarDetalles($reporte, $request);
+                return $reporte;
+            });
+        }, 0, fn ($e) => $e instanceof UniqueConstraintViolationException);
 
-        $reporte = Farmacovigilancia::create([
-            'paciente_id' => $request->paciente_id,
-            'iniciales' => $request->iniciales,
-            'sexo_biologico' => $request->sexo_biologico,
-            'peso_kg' => $request->peso_kg,
-            'fecha_nacimiento_paciente' => $request->fecha_nacimiento_paciente,
-            'edad_comienzo_reaccion' => $request->edad_comienzo_reaccion,
-            'pais_ocurrencia' => $request->pais_ocurrencia ?? 'México',
-            'medicamento_sospechoso' => $request->medicamento_sospechoso,
-            'es_probable_causante' => $request->has('es_probable_causante'),
-            'fabricante_distribuidora' => $request->fabricante_distribuidora,
-            'lote' => $request->lote,
-            'dosis' => $request->dosis ?? '',
-            'via_administracion' => $request->via_administracion,
-            'fecha_inicio_admin' => $request->fecha_inicio_admin,
-            'fecha_fin_admin' => $request->fecha_fin_admin,
-            'duracion_admin' => $request->duracion_admin,
-            'indicacion_medicamento' => $request->indicacion_medicamento,
-            'accion_tomada' => $request->accion_tomada,
-            'fecha_inicio_reaccion' => $request->fecha_inicio_reaccion ?? now(),
-            'fecha_fin_reaccion' => $request->fecha_fin_reaccion,
-            'duracion_reaccion' => $request->duracion_reaccion,
-            'descripcion_reaccion' => $request->descripcion_reaccion,
-            'resultado_reaccion' => $request->resultado_reaccion,
-            'gravedad' => $request->es_grave ? 'Grave' : 'Leve',
-            'es_grave' => $request->has('es_grave'),
-            'evolucion' => $request->resultado_reaccion ?? 'En proceso',
-            'observaciones' => $request->observaciones,
-            'enfermedades_previas' => $request->enfermedades_previas,
-            'comentarios_adicionales' => $request->comentarios_adicionales,
-            'notificador_entidad' => $request->notificador_entidad ?? 'San Luis Potosí',
-            'notificador_profesion' => $request->notificador_profesion,
-            'notificador_nombre' => $request->notificador_nombre,
-            'notificador_apellido' => $request->notificador_apellido,
-            'notificador_establecimiento' => $request->notificador_establecimiento,
-            'notificador_correo' => $request->notificador_correo,
-            'notificador_telefono' => $request->notificador_telefono,
-            'enviar_acuse_correo' => $request->has('enviar_acuse_correo'),
-        ]);
-
-        // Guardar las reacciones múltiples del apartado 3
-        if ($request->has('reacciones')) {
-            foreach ($request->reacciones as $reaccion) {
-                if (!empty($reaccion['sintoma_reaccion'])) {
-                    $reporte->reacciones()->create([
-                        'sintoma_reaccion' => $reaccion['sintoma_reaccion'],
-                        'fecha_inicio' => $reaccion['fecha_inicio'] ?? null,
-                        'fecha_fin' => $reaccion['fecha_fin'] ?? null,
-                        'duracion' => $reaccion['duracion'] ?? null,
-                        'resultado_reaccion' => $reaccion['resultado_reaccion'] ?? null,
-                        'es_grave' => isset($reaccion['es_grave']) ? 1 : 0,
-                    ]);
-                }
-            }
-        }
-
-        // Medicamentos Concomitantes
-        if ($request->has('concomitantes')) {
-            foreach ($request->concomitantes as $concomitante) {
-                if (!empty($concomitante['nombre_medicamento'])) {
-                    $reporte->medicamentosConcomitantes()->create([
-                        'nombre_medicamento' => $concomitante['nombre_medicamento'],
-                        'dosis' => $concomitante['dosis'] ?? '',
-                        'frecuencia' => $concomitante['frecuencia'] ?? '',
-                        'fecha_inicio' => $concomitante['fecha_inicio'] ?? null,
-                    ]);
-                }
-            }
-        }
-
-        return redirect()->route('farmacovigilancia.index')->with('success', 'Reporte registrado exitosamente.');
+        return redirect()->route('farmacovigilancia.index')
+            ->with('success', "Reporte {$reporte->folio} registrado exitosamente.");
     }
 
     public function show($id)
@@ -119,18 +46,21 @@ class FarmacovigilanciaController extends Controller
 
         // Registro de auditoría
         $paciente = $reporte->paciente ?? null;
-        $nombrePaciente = $paciente ? trim("{$paciente->nombres} {$paciente->apellido1} " . ($paciente->apellido2 ?? '')) : 'No especificado';
+        $nombrePaciente = $paciente
+            ? trim("{$paciente->nombres} {$paciente->apellido1} " . ($paciente->apellido2 ?? ''))
+            : 'No especificado';
 
-        \App\Models\Auditoria::create([
-            'idUsuario' => auth()->id() ?? 1,
-            'accion' => 'Consulta de reporte de farmacovigilancia',
+        Auditoria::create([
+            'idUsuario'     => auth()->id() ?? 1,
+            'accion'        => 'Consulta de reporte de farmacovigilancia',
             'tablaAfectada' => 'farmacovigilancia',
-            'detalles' => [
-                'tipo' => 'consulta',
-                'idReporte' => $reporte->idFarmacovigilancia ?? $reporte->id,
-                'paciente' => $nombrePaciente,
+            'detalles'      => [
+                'tipo'      => 'consulta',
+                'idReporte' => $reporte->id,
+                'folio'     => $reporte->folio,
+                'paciente'  => $nombrePaciente,
             ],
-            'fechaAccion' => now(),
+            'fechaAccion'   => now(),
         ]);
 
         return view('farmacovigilancia.show', compact('reporte'));
@@ -139,51 +69,143 @@ class FarmacovigilanciaController extends Controller
     public function edit($id)
     {
         $reporte = Farmacovigilancia::with(['reacciones', 'medicamentosConcomitantes'])->findOrFail($id);
-        
-        return view('farmacovigilancia.edit', compact('reporte'));
+
+        return view('farmacovigilancia.edit', ['reporte' => $reporte] + $this->catalogos());
     }
 
-    public function update(Request $request, Farmacovigilancia $farmacovigilancia)
+    public function update(FarmacovigilanciaRequest $request, Farmacovigilancia $farmacovigilancia)
     {
-        $request->validate([
-            'paciente_id' => 'required|integer',
-            'medicamento_sospechoso' => 'required|string|max:255',
-            'dosis' => 'required|string|max:100',
-            'fecha_inicio_reaccion' => 'nullable|date',
-            'descripcion_reaccion' => 'required|string',
-            'gravedad' => 'nullable|in:Leve,Moderada,Grave',
-        ]);
+        DB::transaction(function () use ($request, $farmacovigilancia) {
+            $datos = $this->datosReporte($request);
+            // Al editar, el vínculo con el expediente no se modifica
+            unset($datos['folioExpediente'], $datos['paciente_id']);
 
-        // Actualizar el reporte principal
-        $farmacovigilancia->update($request->only([
-            'paciente_id', 'medicamento_sospechoso', 'lote', 'dosis', 
-            'fecha_inicio_reaccion', 'descripcion_reaccion', 'gravedad', 'evolucion', 'observaciones'
-        ]));
+            $farmacovigilancia->update($datos);
+            $farmacovigilancia->reacciones()->delete();
+            $farmacovigilancia->medicamentosConcomitantes()->delete();
+            $this->guardarDetalles($farmacovigilancia, $request);
+        });
 
-        // Sincronizar medicamentos concomitantes (eliminamos los anteriores y guardamos los nuevos del formulario)
-        $farmacovigilancia->medicamentosConcomitantes()->delete();
-        if ($request->has('concomitantes')) {
-            foreach ($request->concomitantes as $concomitante) {
-                if (!empty($concomitante['nombre_medicamento'])) {
-                    $farmacovigilancia->medicamentosConcomitantes()->create([
-                        'nombre_medicamento' => $concomitante['nombre_medicamento'],
-                        'dosis' => $concomitante['dosis'] ?? '',
-                        'frecuencia' => $concomitante['frecuencia'] ?? '',
-                        'fecha_inicio' => $concomitante['fecha_inicio'] ?? null,
-                    ]);
-                }
-            }
-        }
-
-        return redirect()->route('farmacovigilancia.index')->with('success', 'Reporte de farmacovigilancia actualizado exitosamente.');
+        return redirect()->route('farmacovigilancia.index')
+            ->with('success', "Reporte {$farmacovigilancia->folio} actualizado exitosamente.");
     }
 
     public function destroy(Farmacovigilancia $farmacovigilancia)
     {
-        // Elimina el reporte (los concomitantes se borran en cascada si está configurado, o los borramos explícitamente)
         $farmacovigilancia->medicamentosConcomitantes()->delete();
+        $farmacovigilancia->reacciones()->delete();
         $farmacovigilancia->delete();
 
         return redirect()->route('farmacovigilancia.index')->with('success', 'Reporte eliminado exitosamente.');
+    }
+
+    private function datosReporte(FarmacovigilanciaRequest $request): array
+    {
+        $d = $request->validated();
+        $usuario = $request->user();
+
+        $folio = $d['folioExpediente'] ?? null;
+        $paciente = $folio ? Expediente::with('paciente')->find($folio)?->paciente : null;
+
+        // Hasta 4 iniciales: dos nombres + dos apellidos
+        $iniciales = $paciente
+            ? mb_strtoupper(collect(preg_split('/\s+/u', trim($paciente->nombres)))->take(2)
+                ->map(fn ($w) => mb_substr($w, 0, 1))
+                ->push(mb_substr($paciente->apellido1, 0, 1))
+                ->push(mb_substr($paciente->apellido2 ?? '', 0, 1))
+                ->filter()->implode(''))
+            : ($d['iniciales'] ?? null);
+
+        $sexo = $paciente
+            ? match ($paciente->sexo) {
+                'M'     => 'Masculino',
+                'F'     => 'Femenino',
+                default => 'Desconocido', // 'O' u otro valor → Desconocido
+            }
+            : ($d['sexo_biologico'] ?? null);
+
+        $med = !empty($d['medicamento_id']) ? Medicamento::find($d['medicamento_id']) : null;
+        $esGrave = (bool) ($d['es_grave'] ?? false);
+
+        return [
+            'folioExpediente'           => $folio,
+            'paciente_id'               => $paciente?->idPaciente,
+            'iniciales'                 => $iniciales,
+            'sexo_biologico'            => $sexo,
+            'fecha_nacimiento_paciente' => $paciente?->fechaNac
+                ?? FarmacovigilanciaRequest::aISO($d['fecha_nacimiento_paciente'] ?? null),
+            'peso_kg'                   => $d['peso_kg'] ?? null,
+            'edad_comienzo_reaccion'    => $d['edad_comienzo_reaccion'] ?? null,
+            'pais_ocurrencia'           => $d['pais_ocurrencia'] ?? 'México',
+
+            'medicamento_id'            => $med?->idMedicamento,
+            'medicamento_sospechoso'    => $med ? trim("{$med->nombre} " . ($med->concentracion ?? '')) : $d['medicamento_sospechoso'],
+            'fabricante_distribuidora'  => $d['fabricante_distribuidora'] ?? $med?->laboratorio,
+            'es_probable_causante'      => (bool) ($d['es_probable_causante'] ?? false),
+            'lote'                      => $d['lote'] ?? null,
+            'dosis'                     => $d['dosis'] ?? '',
+            'via_administracion'        => $d['via_administracion'] ?? null,
+            'fecha_inicio_admin'        => $d['fecha_inicio_admin'] ?? null,
+            'fecha_fin_admin'           => $d['fecha_fin_admin'] ?? null,
+            'duracion_admin'            => $d['duracion_admin'] ?? null,
+            'indicacion_medicamento'    => $d['indicacion_medicamento'] ?? null,
+            'accion_tomada'             => $d['accion_tomada'] ?? null,
+
+            'descripcion_reaccion'      => $d['descripcion_reaccion'],
+            'fecha_inicio_reaccion'     => $d['fecha_inicio_reaccion'] ?? now(),
+            'fecha_fin_reaccion'        => $d['fecha_fin_reaccion'] ?? null,
+            'duracion_reaccion'         => $d['duracion_reaccion'] ?? null,
+            'resultado_reaccion'        => $d['resultado_reaccion'] ?? null,
+            'es_grave'                  => $esGrave,
+            'gravedad'                  => $esGrave ? 'Grave' : 'Leve',
+            'evolucion'                 => $d['resultado_reaccion'] ?? 'En proceso',
+            'observaciones'             => $d['observaciones'] ?? null,
+            'enfermedades_previas'      => $d['enfermedades_previas'] ?? null,
+            'comentarios_adicionales'   => $d['comentarios_adicionales'] ?? null,
+
+            'notificador_entidad'         => 'San Luis Potosí',
+            'notificador_profesion'       => 'Farmacéutico',
+            'notificador_nombre'          => $usuario->nombres,
+            'notificador_apellido'        => trim("{$usuario->apellido1} " . ($usuario->apellido2 ?? '')),
+            'notificador_establecimiento' => 'Unifarmacia UASLP',
+            'notificador_correo'          => 'farmacovigilancia@unifarmacia.example',
+            'notificador_telefono'        => '444 000 0000',
+            'enviar_acuse_correo'         => $request->boolean('enviar_acuse_correo'),
+        ];
+    }
+
+    private function guardarDetalles(Farmacovigilancia $reporte, FarmacovigilanciaRequest $request): void
+    {
+        foreach ($request->validated('reacciones', []) as $r) {
+            $reporte->reacciones()->create([
+                'sintoma_reaccion'   => $r['sintoma_reaccion'],
+                'fecha_inicio'       => FarmacovigilanciaRequest::aISO($r['fecha_inicio'] ?? null),
+                'fecha_fin'          => FarmacovigilanciaRequest::aISO($r['fecha_fin'] ?? null),
+                'duracion'           => $r['duracion'] ?? null,
+                'resultado_reaccion' => $r['resultado_reaccion'] ?? null,
+                'es_grave'           => (bool) ($r['es_grave'] ?? false),
+            ]);
+        }
+
+        foreach ($request->validated('concomitantes', []) as $c) {
+            $reporte->medicamentosConcomitantes()->create([
+                'nombre_medicamento' => $c['nombre_medicamento'],
+                'dosis'              => $c['dosis'] ?? '',
+                'frecuencia'         => $c['frecuencia'] ?? '',
+                'fecha_inicio'       => FarmacovigilanciaRequest::aISO($c['fecha_inicio'] ?? null),
+            ]);
+        }
+    }
+
+    private function catalogos(): array
+    {
+        return [
+            // visitas.datosAntropometricos: para precargar el último peso registrado
+            'expedientes'  => Expediente::where('estado', 'activo')
+                ->with(['paciente', 'visitas.datosAntropometricos'])
+                ->orderBy('folioExpediente')->get(),
+            'medicamentos' => Medicamento::orderBy('nombre')
+                ->get(['idMedicamento', 'nombre', 'concentracion', 'presentacion', 'laboratorio']),
+        ];
     }
 }

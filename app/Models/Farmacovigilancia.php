@@ -9,6 +9,9 @@ class Farmacovigilancia extends Model
     protected $table = 'farmacovigilancia';
 
     protected $fillable = [
+        'folio',
+        'folioExpediente',
+        'medicamento_id',
         'paciente_id',
         'iniciales',
         'sexo_biologico',
@@ -58,9 +61,28 @@ class Farmacovigilancia extends Model
     {
         return $this->hasMany(MedicamentoConcomitante::class);
     }
-    
+
     public function reacciones()
     {
         return $this->hasMany(ReaccionReporte::class);
+    }
+
+    public function expediente()
+    {
+        return $this->belongsTo(Expediente::class, 'folioExpediente', 'folioExpediente');
+    }
+
+    public function medicamentoCatalogo()
+    {
+        return $this->belongsTo(Medicamento::class, 'medicamento_id', 'idMedicamento');
+    }
+
+    public static function generarFolio(): string
+    {
+        $base = 'RAM-' . now()->format('Ymd');
+        $ultimo = static::where('folio', 'like', "{$base}-%")->orderByDesc('folio')->value('folio');
+        $n = $ultimo ? ((int) substr($ultimo, -3)) + 1 : 1;
+
+        return sprintf('%s-%03d', $base, $n);
     }
 }
