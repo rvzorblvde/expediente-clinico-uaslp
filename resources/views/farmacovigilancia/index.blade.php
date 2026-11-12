@@ -66,14 +66,11 @@
                                             class="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100 transition-colors">
                                                 Editar
                                         </a>
-                                        <form method="POST" action="{{ route('farmacovigilancia.destroy', $reporte) }}"
-                                            onsubmit="return confirm('¿Estás seguro de eliminar el reporte RAM-{{ $reporte->id }}?')">
+                                        <form action="{{ route('farmacovigilancia.destroy', $reporte) }}" method="POST" class="inline"
+                                              data-confirm="¿Eliminar el reporte {{ $reporte->folio }}? Esta acción no se puede deshacer.">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit"
-                                                    class="px-3 py-1 text-xs font-medium text-red-700 bg-red-50 rounded hover:bg-red-100 transition-colors">
-                                                Eliminar
-                                            </button>
+                                            <button type="submit" class="text-red-600 hover:underline">Eliminar</button>
                                         </form>
                                     </div>
                                 </td>
@@ -88,7 +85,7 @@
                     </tbody>
                 </table>
             </div>
-            
+
             <div class="mt-4">
                 {{ $reportes->links() }}
             </div>
