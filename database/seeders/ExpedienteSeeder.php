@@ -203,11 +203,15 @@ class ExpedienteSeeder extends Seeder
                 }
 
                 // 8. Visita inicial y Triage
+                $fechaVisita = now();
+
                 $visita = Visita::create([
                     'folioExpediente' => $folio,
-                    'idUsuario' => $usuarioId,
-                    'motivo' => 'Apertura de expediente y valoración inicial',
-                    'estado' => 'completada'
+                    'idUsuario'       => $usuarioId,
+                    'fecha'           => $fechaVisita,
+                    'folioVisita'     => Visita::generarFolio($fechaVisita),
+                    'motivo'          => 'Apertura de expediente y valoración inicial',
+                    'estado'          => 'completada',
                 ]);
 
                 $peso = $data['triage']['peso'];

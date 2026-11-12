@@ -124,7 +124,7 @@
                     <div class="mb-4 p-4 rounded-lg bg-slate-50 border border-slate-200">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md">
-                                Visita #{{ $visita->idVisita }} - {{ $visita->created_at ? $visita->created_at->format('d/m/Y H:i') : 'Fecha no registrada' }}
+                                Visita #{{ $visita->idVisita }} - {{ $visita->created_at ? $visita->fecha->format('d/m/Y H:i') : 'Fecha no registrada' }}
                             </span>
                             <span class="text-xs text-slate-500">Motivo: {{ $visita->motivo }}</span>
                         </div>

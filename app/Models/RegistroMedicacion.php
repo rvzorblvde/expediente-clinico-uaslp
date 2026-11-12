@@ -14,4 +14,9 @@ class RegistroMedicacion extends Model
         'idVisita', 'idMedicamento', 'dosis', 'viaAdministracion',
         'frecuenciaUso', 'indicaciones', 'fechaRegistro'
     ];
+
+    public function medicamento()
+    {
+        return $this->belongsTo(Medicamento::class, 'idMedicamento', 'idMedicamento');
+    }
 }

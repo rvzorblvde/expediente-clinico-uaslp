@@ -19,5 +19,10 @@ return [
     'tipos' => [
         'comercial' => 'Comercial (marca)',
         'generico'  => 'Genérico',
-    ]
+    ],
+    'vias_administracion' => [
+        'Oral', 'Sublingual', 'Tópica', 'Transdérmica', 'Inhalada', 'Nasal',
+        'Oftálmica', 'Ótica', 'Rectal', 'Vaginal',
+        'Intramuscular', 'Intravenosa', 'Subcutánea', 'Intradérmica',
+    ],
 ];
