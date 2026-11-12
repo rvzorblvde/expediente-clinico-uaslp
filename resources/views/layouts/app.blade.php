@@ -6,7 +6,6 @@
     <title>@yield('title', 'Unifarmacia')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<x-confirm-modal></x-confirm-modal>
 <body class="bg-slate-50 text-slate-800 antialiased font-sans">
     @yield('content')
 
@@ -20,7 +19,7 @@
         <script>
             (function() {
                 // 10 minutos en milisegundos (10 * 60 * 1000)
-                const INACTIVITY_TIMEOUT = 10 * 60 * 1000;
+                const INACTIVITY_TIMEOUT = 10 * 60 * 1000; 
                 let inactivityTimer;
 
                 function logoutUser() {
