@@ -417,6 +417,48 @@
                     form.target = targetOriginal;
                 }
             </script>
+            {{-- Ventana de Advertencia: Sin registros en el periodo --}}
+            @php
+                $totalCasosMedicamentos = array_sum($medicamentosData ?? []);
+                $sinRegistrosPeriodo = ($usuariosNuevos == 0) && empty($problemasLabels) && ($totalCasosMedicamentos == 0);
+            @endphp
+
+            <div id="modalSinRegistros"
+                 class="{{ $sinRegistrosPeriodo ? 'fixed' : 'hidden' }} inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-[1px] px-4">
+                <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6">
+                    <div class="flex items-start gap-4">
+                        {{-- Icono circular de advertencia --}}
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-amber-50 border border-amber-200 text-amber-600 shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+
+                        <div class="flex-1">
+                            <h3 class="text-base font-bold text-slate-900">
+                                Sin registros en el periodo
+                            </h3>
+                            <p class="text-sm text-slate-600 mt-1.5 leading-relaxed">
+                                No existen expedientes nuevos, antecedentes clínicos ni reportes de farmacovigilancia durante <strong class="capitalize">{{ $etiquetaPeriodo }}</strong>. Los indicadores se muestran en 0.
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Botones alineados a la derecha --}}
+                    <div class="flex justify-end items-center gap-2.5 mt-6">
+                        <button type="button"
+                                onclick="document.getElementById('modalSinRegistros').classList.add('hidden')"
+                                class="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                            Cerrar
+                        </button>
+                        <a href="{{ route('reportes.index') }}"
+                           class="px-4 py-2 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition-colors shadow-sm">
+                            Ir al mes actual
+                        </a>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 @endsection
