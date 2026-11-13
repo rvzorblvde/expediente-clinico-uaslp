@@ -70,7 +70,7 @@ class FarmacovigilanciaController extends Controller
     {
         $reporte = Farmacovigilancia::with(['reacciones', 'medicamentosConcomitantes'])->findOrFail($id);
 
-        return view('farmacovigilancia.edit', ['reporte' => $reporte] + $this->catalogos());
+        return view('farmacovigilancia.edit', ['reporte' => $reporte] + $this->catalogos([$reporte->medicamento_id]));
     }
 
     public function update(FarmacovigilanciaRequest $request, Farmacovigilancia $farmacovigilancia)
@@ -197,14 +197,14 @@ class FarmacovigilanciaController extends Controller
         }
     }
 
-    private function catalogos(): array
+    private function catalogos(iterable $medicamentosEnUso = []): array
     {
         return [
             // visitas.datosAntropometricos: para precargar el último peso registrado
             'expedientes'  => Expediente::where('estado', 'activo')
                 ->with(['paciente', 'visitas.datosAntropometricos'])
                 ->orderBy('folioExpediente')->get(),
-            'medicamentos' => Medicamento::orderBy('nombre')
+            'medicamentos' => Medicamento::disponibles($medicamentosEnUso)->orderBy('nombre')
                 ->get(['idMedicamento', 'nombre', 'concentracion', 'presentacion', 'laboratorio']),
         ];
     }

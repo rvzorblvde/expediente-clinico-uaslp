@@ -62,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
         // Registro y control de medicamentos
         Route::get('/medicamentos/{medicamento}/editar', [MedicamentoController::class, 'edit'])->name('medicamentos.edit');
         Route::put('/medicamentos/{medicamento}', [MedicamentoController::class, 'update'])->name('medicamentos.update');
-        Route::delete('/medicamentos/{medicamento}', [MedicamentoController::class, 'destroy'])->name('medicamentos.destroy');
+        Route::patch('/medicamentos/{medicamento}/estado', [MedicamentoController::class, 'cambiarEstado'])->name('medicamentos.estado');
 
         // Generación de reportes
         Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes.index');

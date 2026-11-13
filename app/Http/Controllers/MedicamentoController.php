@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use App\Http\Requests\MedicamentoRequest;
 use App\Models\Medicamento;
@@ -27,6 +26,8 @@ class MedicamentoController extends Controller
             })
             ->when($filtro === 'controlado', fn ($query) => $query->where('esControlado', true))
             ->when($filtro === 'receta', fn ($query) => $query->where('requiereReceta', true))
+            ->when($filtro === 'activos', fn ($query) => $query->where('estado', Medicamento::ACTIVO))
+            ->when($filtro === 'inactivos', fn ($query) => $query->where('estado', Medicamento::INACTIVO))
             ->orderBy('nombre')
             ->paginate(15)
             ->withQueryString();
@@ -84,19 +85,22 @@ class MedicamentoController extends Controller
         return redirect()->route('medicamentos.index')->with('success', 'Medicamento actualizado exitosamente.');
     }
 
-    public function destroy(Medicamento $medicamento)
+    /**
+     * Activa o desactiva un medicamento. Los desactivados no aparecen al llenar
+     * expedientes, visitas ni reportes, pero se conserva su historial.
+     */
+    public function cambiarEstado(Medicamento $medicamento)
     {
-        try {
-            $medicamento->delete();
-        } catch (QueryException $e) {
-            // 23503 = violación de llave foránea (ya usado en registros de medicación)
-            if ((string) $e->getCode() === '23503') {
-                return back()->with('error', 'No se puede eliminar: el medicamento ya está registrado en visitas.');
-            }
-            throw $e;
-        }
+        $desactivar = $medicamento->estaActivo();
 
-        return redirect()->route('medicamentos.index')->with('success', 'Medicamento eliminado exitosamente.');
+        $medicamento->estado = $desactivar ? Medicamento::INACTIVO : Medicamento::ACTIVO;
+        $medicamento->save();
+
+        $mensaje = $desactivar
+            ? "«{$medicamento->nombre}» fue desactivado y ya no aparecerá en los expedientes."
+            : "«{$medicamento->nombre}» fue activado nuevamente.";
+
+        return back()->with('success', $mensaje);
     }
 
     private function catalogos(): array

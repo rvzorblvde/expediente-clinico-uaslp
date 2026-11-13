@@ -78,10 +78,13 @@ class ExpedienteController extends Controller
         return view('expedientes.create', $this->catalogosFormulario());
     }
 
-    private function catalogosFormulario(): array
+    private function catalogosFormulario(?Expediente $expediente = null): array
     {
+        // Solo medicamentos activos; al editar se conservan los que ya tiene asignados
+        $enUso = $expediente ? $expediente->tratamientos()->pluck('idMedicamento') : [];
+
         return [
-            'medicamentos' => Medicamento::orderBy('nombre')
+            'medicamentos' => Medicamento::disponibles($enUso)->orderBy('nombre')
                 ->get(['idMedicamento', 'nombre', 'concentracion', 'presentacion']),
         ];
     }
@@ -120,7 +123,7 @@ class ExpedienteController extends Controller
     public function edit(Expediente $expediente)
     {
         $expediente->load('paciente.telefonos', 'paciente.correos', 'paciente.contactos.telefonos', 'paciente.contactos.correos');
-        return view('expedientes.edit', compact('expediente') + $this->catalogosFormulario());
+        return view('expedientes.edit', compact('expediente') + $this->catalogosFormulario($expediente));
     }
 
     public function update(ExpedienteRequest $request, Expediente $expediente)
