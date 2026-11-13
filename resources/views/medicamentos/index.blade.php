@@ -35,6 +35,8 @@
                     <option value="">Todos</option>
                     <option value="receta" @selected($filtro === 'receta')>Requieren receta</option>
                     <option value="controlado" @selected($filtro === 'controlado')>Controlados</option>
+                    <option value="activos" @selected($filtro === 'activos')>Activos</option>
+                    <option value="inactivos" @selected($filtro === 'inactivos')>Inactivos</option>
                 </select>
                 <button type="submit" class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-900">Filtrar</button>
                 @if ($q !== '' || $filtro)
@@ -54,6 +56,7 @@
                         <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Concentración</th>
                         <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Receta</th>
                         <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Controlado</th>
+                        <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Estado</th>
                         <th class="px-4 py-3 text-right font-semibold">Acciones</th>
                     </tr>
                     </thead>
@@ -78,18 +81,29 @@
                                         {{ $medicamento->esControlado ? 'Sí' : 'No' }}
                                     </span>
                             </td>
+                            <td class="px-4 py-3">
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $medicamento->estaActivo() ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                        {{ $medicamento->estaActivo() ? 'Activo' : 'Inactivo' }}
+                                    </span>
+                            </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <a href="{{ route('medicamentos.edit', $medicamento) }}" class="text-blue-600 hover:underline mr-3">Editar</a>
-                                <form action="{{ route('medicamentos.destroy', $medicamento) }}" method="POST" class="inline"
-                                      data-confirm="¿Eliminar «{{ $medicamento->nombre }}»? Esta acción no se puede deshacer.">
+                                <form action="{{ route('medicamentos.estado', $medicamento) }}" method="POST" class="inline"
+                                      data-confirm="{{ $medicamento->estaActivo()
+                                          ? '¿Desactivar «' . $medicamento->nombre . '»? Ya no aparecerá al llenar expedientes ni visitas.'
+                                          : '¿Activar nuevamente «' . $medicamento->nombre . '»?' }}">
                                     @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline">Eliminar</button>
+                                    @method('PATCH')
+                                    @if ($medicamento->estaActivo())
+                                        <button type="submit" class="text-red-600 hover:underline">Desactivar</button>
+                                    @else
+                                        <button type="submit" class="text-emerald-600 hover:underline">Activar</button>
+                                    @endif
                                 </form>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">No hay medicamentos que coincidan.</td></tr>
+                        <tr><td colspan="10" class="px-4 py-8 text-center text-slate-500">No hay medicamentos que coincidan.</td></tr>
                     @endforelse
                     </tbody>
                 </table>

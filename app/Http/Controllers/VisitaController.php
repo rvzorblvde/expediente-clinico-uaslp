@@ -86,7 +86,7 @@ class VisitaController extends Controller
     public function edit(Visita $visita)
     {
         $visita->load(['datosAntropometricos', 'registrosMedicacion']);
-        return view('visitas.edit', ['visita' => $visita] + $this->catalogos());
+        return view('visitas.edit', ['visita' => $visita] + $this->catalogos($visita->registrosMedicacion->pluck('idMedicamento')));
     }
 
     public function update(VisitaRequest $request, Visita $visita)
@@ -178,12 +178,12 @@ class VisitaController extends Controller
         }
     }
 
-    private function catalogos(): array
+    private function catalogos(iterable $medicamentosEnUso = []): array
     {
         return [
             'expedientes'  => Expediente::where('estado', 'activo')->with('paciente')
                 ->orderBy('folioExpediente')->get(),
-            'medicamentos' => Medicamento::orderBy('nombre')
+            'medicamentos' => Medicamento::disponibles($medicamentosEnUso)->orderBy('nombre')
                 ->get(['idMedicamento', 'nombre', 'concentracion', 'presentacion']),
         ];
     }
