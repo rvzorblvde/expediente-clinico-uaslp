@@ -128,11 +128,13 @@ class ReporteController extends Controller
         // Gráfica de medicamentos analizados
         $medicamentosAnalizados = DB::table('medicamentos')
             ->leftJoin('farmacovigilancia', function ($join) use ($inicioPeriodo, $finPeriodo) {
-                $join->on(
-                    DB::raw('LOWER(TRIM(medicamentos."principioActivo"))'),
-                    '=',
-                    DB::raw('LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))')
-                )
+                $join->where(function ($q) {
+                    $q->whereColumn('farmacovigilancia.medicamento_id', '=', 'medicamentos.idMedicamento')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('farmacovigilancia.medicamento_id')
+                                ->whereRaw('LOWER(TRIM(medicamentos."principioActivo")) = LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))');
+                        });
+                })
                     ->whereBetween('farmacovigilancia.created_at', [$inicioPeriodo, $finPeriodo]);
             })
             ->select(
@@ -235,11 +237,13 @@ class ReporteController extends Controller
         // Gráfica de medicamentos analizados
         $medicamentosAnalizados = DB::table('medicamentos')
             ->leftJoin('farmacovigilancia', function ($join) use ($inicioPeriodo, $finPeriodo) {
-                $join->on(
-                    DB::raw('LOWER(TRIM(medicamentos."principioActivo"))'),
-                    '=',
-                    DB::raw('LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))')
-                )
+                $join->where(function ($q) {
+                    $q->whereColumn('farmacovigilancia.medicamento_id', '=', 'medicamentos.idMedicamento')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('farmacovigilancia.medicamento_id')
+                                ->whereRaw('LOWER(TRIM(medicamentos."principioActivo")) = LOWER(TRIM(farmacovigilancia.medicamento_sospechoso))');
+                        });
+                })
                     ->whereBetween('farmacovigilancia.created_at', [$inicioPeriodo, $finPeriodo]);
             })
             ->select(
