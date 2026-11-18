@@ -18,6 +18,75 @@
                 </div>
             </div>
 
+            {{-- Barra de Filtros --}}
+            <form method="GET" action="{{ route('auditorias.index') }}"
+                class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {{-- Usuario --}}
+                    <div>
+                        <label for="usuario" class="block text-xs font-semibold text-slate-600 mb-1">Usuario</label>
+                        <input type="text" name="usuario" id="usuario" value="{{ request('usuario') }}"
+                            placeholder="Nombre o correo..."
+                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    {{-- Acción --}}
+                    <div>
+                        <label for="accion" class="block text-xs font-semibold text-slate-600 mb-1">Acción</label>
+                        <select name="accion" id="accion"
+                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Todas las acciones</option>
+                            @foreach ($acciones as $accion)
+                                <option value="{{ $accion }}" @selected(request('accion') === $accion)>
+                                    {{ $accion }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Módulo --}}
+                    <div>
+                        <label for="modulo" class="block text-xs font-semibold text-slate-600 mb-1">Módulo</label>
+                        <select name="modulo" id="modulo"
+                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">Todos los módulos</option>
+                            @foreach ($modulos as $modulo)
+                                <option value="{{ $modulo }}" @selected(request('modulo') === $modulo)>
+                                    {{ ucfirst($modulo) }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Fecha Desde --}}
+                    <div>
+                        <label for="desde" class="block text-xs font-semibold text-slate-600 mb-1">Desde</label>
+                        <input type="date" name="desde" id="desde" value="{{ request('desde') }}"
+                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+
+                    {{-- Fecha Hasta --}}
+                    <div>
+                        <label for="hasta" class="block text-xs font-semibold text-slate-600 mb-1">Hasta</label>
+                        <input type="date" name="hasta" id="hasta" value="{{ request('hasta') }}"
+                            class="w-full rounded-lg border-slate-300 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-end gap-2">
+                    @if (request()->anyFilled(['usuario', 'accion', 'modulo', 'desde', 'hasta']))
+                        <a href="{{ route('auditorias.index') }}"
+                            class="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                            Limpiar filtros
+                        </a>
+                    @endif
+                    <button type="submit"
+                        class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                        Filtrar
+                    </button>
+                </div>
+            </form>
+
             {{-- Tabla de Logs --}}
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
                 <table class="min-w-full text-sm">
@@ -26,7 +95,7 @@
                             <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Fecha y Hora</th>
                             <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Usuario</th>
                             <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Acción</th>
-                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Tabla Afectada</th>
+                            <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Módulo</th>
                             <th class="px-4 py-3 text-right font-semibold">Detalles (JSON)</th>
                         </tr>
                     </thead>
@@ -58,7 +127,7 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="px-4 py-10 text-center text-slate-500">
-                                    No hay registros de auditoría disponibles.
+                                    No se encontraron registros de auditoría con los filtros seleccionados.
                                 </td>
                             </tr>
                         @endforelse
@@ -82,7 +151,6 @@
                     class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
             </div>
 
-            {{-- Contenedor con scroll para los detalles --}}
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 max-h-96 overflow-y-auto">
                 <pre id="contenido-json" class="text-slate-700 text-xs font-mono whitespace-pre-wrap"></pre>
             </div>
@@ -100,13 +168,10 @@
         function mostrarDetalles(button) {
             const modal = document.getElementById('modal-json');
             const contenedor = document.getElementById('contenido-json');
-
-            // Obtenemos el JSON almacenado en el atributo data
             const rawDatos = button.getAttribute('data-detalles');
 
             let objetoDatos = rawDatos;
             try {
-                // Parseamos el string JSON a un objeto/array de JS
                 objetoDatos = JSON.parse(rawDatos);
             } catch (e) {
                 objetoDatos = { informacion: rawDatos };

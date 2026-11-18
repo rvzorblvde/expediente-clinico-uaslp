@@ -30,7 +30,7 @@
                 @include('farmacovigilancia._form', ['reporte' => null])
 
                 <div class="flex items-center justify-end gap-3">
-                    <a href="{{ route('farmacovigilancia.index') }}"
+                    <a href="{{ route(auth()->user()->can('manage-clinical-data') ? 'farmacovigilancia.index' : 'dashboard') }}"
                        class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">Cancelar</a>
                     <button type="submit"
                             class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">

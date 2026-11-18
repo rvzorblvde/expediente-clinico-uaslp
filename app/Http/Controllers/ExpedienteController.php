@@ -25,6 +25,10 @@ class ExpedienteController extends Controller
 {
     public function index(Request $request)
     {
+        if (! $request->user()->can('manage-clinical-data')) {
+            return redirect()->route('expedientes.create');
+        }
+
         $columnas = [
             'idPaciente' => 'expedientes.idPaciente',
             'folio'      => 'expedientes.folioExpediente',
@@ -116,6 +120,11 @@ class ExpedienteController extends Controller
             });
         }, 100, fn ($e) => $e instanceof UniqueConstraintViolationException);
 
+        if (! $request->user()->can('manage-clinical-data')) {
+            return redirect()->route('dashboard')
+                ->with('success', "Expediente {$expediente->folioExpediente} creado exitosamente.");
+        }
+        
         return redirect()->route('expedientes.show', $expediente)
             ->with('success', "Expediente {$expediente->folioExpediente} creado exitosamente.");
     }
