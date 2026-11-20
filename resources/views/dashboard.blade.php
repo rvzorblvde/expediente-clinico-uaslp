@@ -11,15 +11,15 @@
         $modulos = [
             [
                 'nombre' => 'Expedientes',
-                'desc' => 'Gestionar historiales y notas médicas.',
-                'ruta' => 'expedientes.index',
+                'desc' => $esTrabajadorOAdmin ? 'Gestionar historiales y notas médicas.' : 'Registrar un nuevo expediente clínico.',
+                'ruta' => $esTrabajadorOAdmin ? 'expedientes.index' : 'expedientes.create',
                 'admin' => false,
                 'solo_personal' => false, // Disponible para todos (crear expediente)
                 'icono' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
             ],
             [
                 'nombre' => 'Visitas',
-                'desc' => 'Registrar y consultar visitas.',
+                'desc' => $esTrabajadorOAdmin ? 'Registrar y consultar visitas.' : 'Registrar una nueva visita.',
                 'ruta' => $esTrabajadorOAdmin ? 'visitas.index' : 'visitas.create',
                 'admin' => false,
                 'solo_personal' => false,
@@ -35,8 +35,8 @@
             ],
             [
                 'nombre' => 'Farmacovigilancia',
-                'desc' => 'Reportes de reacciones adversas.',
-                'ruta' => 'farmacovigilancia.index',
+                'desc' => $esTrabajadorOAdmin ? 'Reportes de reacciones adversas.' : 'Registrar un reporte de reacción adversa.',
+                'ruta' => $esTrabajadorOAdmin ? 'farmacovigilancia.index' : 'farmacovigilancia.create',
                 'admin' => false,
                 'solo_personal' => false, // Disponible para todos
                 'icono' => 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',

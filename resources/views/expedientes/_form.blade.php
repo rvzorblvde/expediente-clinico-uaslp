@@ -1,5 +1,6 @@
 @php
-    $p = $paciente ?? null;
+    /** @var \App\Models\Paciente|null $paciente */
+    $p = isset($paciente) ? $paciente : null;
 
     $input  = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
     $select = 'w-36 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
@@ -566,7 +567,7 @@
 
 {{-- ========== Botones ========== --}}
 <div class="flex justify-end gap-3">
-    <a href="{{ route('expedientes.index') }}"
+    <a href="{{ route(auth()->user()->can('manage-clinical-data') ? 'expedientes.index' : 'dashboard') }}"
        class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
         Cancelar
     </a>

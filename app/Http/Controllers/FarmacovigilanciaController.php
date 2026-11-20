@@ -14,6 +14,10 @@ class FarmacovigilanciaController extends Controller
 {
     public function index()
     {
+        if (! auth()->user()->can('manage-clinical-data')) {
+            return redirect()->route('farmacovigilancia.create');
+        }
+
         // RF-06.2: Histórico de reportes de RAM
         $reportes = Farmacovigilancia::with('paciente', 'medicamentosConcomitantes')->latest()->paginate(10);
         return view('farmacovigilancia.index', compact('reportes'));
@@ -35,6 +39,11 @@ class FarmacovigilanciaController extends Controller
                 return $reporte;
             });
         }, 0, fn ($e) => $e instanceof UniqueConstraintViolationException);
+
+        if (! $request->user()->can('manage-clinical-data')) {
+            return redirect()->route('dashboard')
+                ->with('success', "Reporte {$reporte->folio} registrado exitosamente.");
+        }
 
         return redirect()->route('farmacovigilancia.index')
             ->with('success', "Reporte {$reporte->folio} registrado exitosamente.");
